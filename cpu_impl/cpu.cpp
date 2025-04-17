@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <regex>
@@ -8,6 +9,18 @@
 
 #define COLUMNS 1024
 // #define SAMPLE_MAX 512
+
+struct cluster_member
+{
+    int zig_zag_index = -1;
+    uint16_t row;
+    uint16_t col;
+};
+
+struct cluster
+{
+    std::vector<cluster_member>
+};
 struct sample
 {
     int row = -1;
@@ -24,22 +37,48 @@ int hexStringToInt(const std::string& hexString) {
 
 
 void process_event(const std::vector<sample>& samples, 
-                   std::unordered_map<int, std::vector<sample>>& current_clusters, 
+                   std::vector<std::vector<sample>>& col_pair_sets,
                    int current_cluster_index)
 {
-    int starting_col = samples.front().col;
+    
+    int prev_col_pair_index = (samples.front().col / 2);
+    auto prev_zig_zag_index = 2*samples.front().row + ((samples.front().row + samples.front().row)%2);
 
     int ci = current_cluster_index;
+    
+    std::vector<sample> col_pair_set;
+    // 
     for(const auto & sample : samples)
     {
+        auto col_pair_index = sample.col / 2;
+        auto zig_zag_index = (2*sample.row) + ((sample.row + sample.row)%2);
 
+        if(prev_col_pair_index != col_pair_index)
+        {
+            col_pair_sets.push_back(col_pair_set);
+            col_pair_set.clear();
+        } else {
+            col_pair_set.push_back(sample);
+        }
+        prev_col_pair_index = col_pair_index;
     }
+
+    // stitching the column pair sets
+
+    std::vector<std::vector<sample>> clusters;
+
+    for(size_t ind = 0; ind < (col_pair_sets.size()-1); ind+=2)
+    {
+        auto col_r = col_pair_sets[ind+1];
+        auto col_l = col_pair_sets[ind];
+    }
+    
 }
 
 std::vector<sample> cluster_column(const std::vector<sample>& samples_l, const std::vector<sample>& samples_r)
 {
     std::vector<sample> cluster_res;
-    for()
+    
     return cluster_res;
 }
 
