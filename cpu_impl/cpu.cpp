@@ -1,8 +1,18 @@
+#include <cstdint>
 #include <iostream>
 #include <fstream>
 #include <regex>
 #include <string>
 #include <algorithm>
+#include <unordered_map>
+
+#define COLUMNS 1024
+// #define SAMPLE_MAX 512
+struct sample
+{
+    int row = -1;
+    int col = -1;
+};
 
 int hexStringToInt(const std::string& hexString) {
     int result;
@@ -10,6 +20,27 @@ int hexStringToInt(const std::string& hexString) {
     ss << std::hex << hexString;
     ss >> result;
     return result;
+}
+
+
+void process_event(const std::vector<sample>& samples, 
+                   std::unordered_map<int, std::vector<sample>>& current_clusters, 
+                   int current_cluster_index)
+{
+    int starting_col = samples.front().col;
+
+    int ci = current_cluster_index;
+    for(const auto & sample : samples)
+    {
+
+    }
+}
+
+std::vector<sample> cluster_column(const std::vector<sample>& samples_l, const std::vector<sample>& samples_r)
+{
+    std::vector<sample> cluster_res;
+    for()
+    return cluster_res;
 }
 
 int main(int argc, char *argv[]) {
@@ -36,9 +67,10 @@ int main(int argc, char *argv[]) {
     int line_num = 0;
 
     // Read and process each line
+
     while (std::getline(file, line)) {
         ++line_num;
-        
+        std::vector<sample> events_sample;
         std::smatch match;
         if (std::regex_match(line,match, pattern)) {
             std::cout << "Line " << line_num << ": " << hexStringToInt(match[1]) <<" "<< hexStringToInt(match[2]) << std::endl;
