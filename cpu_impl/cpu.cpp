@@ -19,7 +19,12 @@ struct cluster_member
 
 struct cluster
 {
-    std::vector<cluster_member>
+    std::vector<cluster_member> members;
+};
+
+struct subcluster
+{
+
 };
 struct sample
 {
@@ -34,7 +39,6 @@ int hexStringToInt(const std::string& hexString) {
     ss >> result;
     return result;
 }
-
 
 void process_event(const std::vector<sample>& samples, 
                    std::vector<std::vector<sample>>& col_pair_sets,
@@ -75,10 +79,13 @@ void process_event(const std::vector<sample>& samples,
     
 }
 
-std::vector<sample> cluster_column(const std::vector<sample>& samples_l, const std::vector<sample>& samples_r)
+std::vector<subcluster> cluster_column(const std::vector<sample>& samples)
 {
-    std::vector<sample> cluster_res;
-    
+    std::vector<subcluster> cluster_res;
+    for (const auto sample : samples)
+    {
+        
+    }
     return cluster_res;
 }
 
