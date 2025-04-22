@@ -146,16 +146,20 @@ std::vector<subcluster> cluster_column(const std::vector<sample>& samples, int &
     return cluster_res;
 }
 
-void stich_subclusters(std::vector<subcluster> subclusters)
+
+std::vector<cluster> stich_subclusters(std::vector<subcluster> subclusters)
 {
     // first we go through all of the subclusters to see if any of the bboxes are connected
-
+    
+    // for each of the subclusters we will assume that there is only one to n full clusters per-each event id
+    
     // for(const auto sc : subclusters)
     // {
     //     sc.bound_box.bottom_right
     // }
-
+    return {};
 }
+
 int main(int argc, char *argv[]) {
 
     if (argc != 2)
