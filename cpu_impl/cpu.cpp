@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <optional>
 #include <regex>
 #include <string>
 #include <algorithm>
@@ -22,15 +23,29 @@ struct cluster
     std::vector<cluster_member> members;
 };
 
-struct subcluster
-{
 
+
+struct point {
+    int x = -1;
+    int y = -1;
+};
+struct bbox {
+    point top_left;
+    point bottom_right;
 };
 struct sample
 {
     int row = -1;
     int col = -1;
 };
+struct subcluster
+{
+    bbox bound_box;
+    std::vector<sample> members;
+    int cluster_id = -1;
+    int event_id = -1;
+};
+
 
 int hexStringToInt(const std::string& hexString) {
     int result;
@@ -79,13 +94,55 @@ void process_event(const std::vector<sample>& samples,
     
 }
 
-std::vector<subcluster> cluster_column(const std::vector<sample>& samples)
+
+
+// this is done on each events samples
+std::vector<subcluster> cluster_column(const std::vector<sample>& samples, int & current_cluster_index, int event_id)
 {
     std::vector<subcluster> cluster_res;
+
+    std::optional<sample> prev_sample = std::nullopt;
+
+    subcluster current_subcluster;
     for (const auto sample : samples)
     {
-        
+        auto column = sample.col;
+        auto row = sample.row;
+        if(!prev_sample) // first sample, must be new sub-cluster
+        {   
+            current_cluster_index++;
+            current_subcluster.event_id = event_id;
+            current_subcluster.cluster_id = current_cluster_index;
+            current_subcluster.bound_box.bottom_right.x = sample.col;
+            current_subcluster.bound_box.bottom_right.y = sample.row;
+            current_subcluster.bound_box.top_left = current_subcluster.bound_box.bottom_right;
+            current_subcluster.members.push_back(sample);
+            prev_sample = sample;
+        } else {
+            bool new_col_pair = ( (column/2) != ((prev_sample->col)/2));
+            bool new_subcluster = std::max(column - (prev_sample->col), row-(prev_sample->row)) > 1;
+            if(new_subcluster || new_col_pair)
+            {
+                cluster_res.push_back(current_subcluster);
+                current_subcluster = {};
+                current_cluster_index++;
+                current_subcluster.event_id = event_id;
+                current_subcluster.cluster_id = current_cluster_index;
+                current_subcluster.bound_box.bottom_right.x = sample.col;
+                current_subcluster.bound_box.bottom_right.y = sample.row;
+                current_subcluster.bound_box.top_left = current_subcluster.bound_box.bottom_right;
+                current_subcluster.members.push_back(sample);
+
+            } else {
+                current_subcluster.members.push_back(sample);
+                current_subcluster.bound_box.bottom_right.x = std::max(current_subcluster.bound_box.bottom_right.x, sample.col);
+                current_subcluster.bound_box.top_left.x = std::min(current_subcluster.bound_box.top_left.x, sample.col);
+                current_subcluster.bound_box.bottom_right.y = std::max(current_subcluster.bound_box.bottom_right.y, sample.row);
+                current_subcluster.bound_box.top_left.y = std::min(current_subcluster.bound_box.top_left.y, sample.row);
+            }
+        }
     }
+    cluster_res.push_back(current_subcluster);
     return cluster_res;
 }
 
