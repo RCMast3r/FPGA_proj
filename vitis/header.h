@@ -3,12 +3,13 @@
 
 #include <ap_int.h>
 #include <cstdint>
-#include <cstdlib>
-#include <fstream>
-#include <hls_math.h>
-#include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
+//#include <cstdlib>
+//#include <fstream>
+//#include <hls_math.h>
+//#include <iostream>
+//#include <stdio.h>
+//#include <stdlib.h>
+#include <algorithm>
 
 typedef ap_uint<10> col_idx_t; // Column Index: 1024 Columns -> log2(1024) = 10
 typedef ap_uint<9>  row_idx_t; // Row Index: 512 Rows -> log2(512) = 9
