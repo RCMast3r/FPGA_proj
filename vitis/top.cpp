@@ -8,17 +8,20 @@
  * @param num_lines the number of lines in the input file to read
  * @param fired_pixel_stream_out the stream of fired pixels, non-empty events, and end markers
  */
-void read_input_lines(fired_pixel input_file_lines[], unsigned int num_lines, hls::stream<fired_pixel>& fired_pixel_stream_out) {
+void read_input_lines(fired_pixel input_file_lines[], unsigned int num_lines, hls::stream<fired_pixel>& fired_pixel_stream_out)
+{
     fired_pixel prev_line = input_file_lines[0]; // first entry
 
-    for (int i = 1; i < num_lines; i++) {
+    for (int i = 1; i < num_lines; i++) // "i < num_lines" is the ONLY exit condition b/c dataflow loops can only have one exit
+    {
         fired_pixel curr_line = input_file_lines[i];
 
-        bool prev_is_pixel = !(prev_line.is_new_event);
-        bool prev_not_empty_event = !(prev_line.is_new_event && curr_line.is_new_event);
+        bool prev_is_pixel = !(prev_line.is_new_event); // no need to check for end marker, since lines are not in a stream
+        bool prev_not_empty_event = !(prev_line.is_new_event && curr_line.is_new_event); // 2 subsequent events means the first was empty
 
-        // see if we can send prior_line
-        if (prev_is_pixel || prev_not_empty_event) {
+        // send along fired pixels and NON-empty events 
+        if (prev_is_pixel || prev_not_empty_event)
+        {
             fired_pixel_stream_out << prev_line;
         }
 
@@ -27,7 +30,7 @@ void read_input_lines(fired_pixel input_file_lines[], unsigned int num_lines, hl
 
     fired_pixel stream_end_marker;
     stream_end_marker.is_end = 1;
-    fired_pixel_stream_out << stream_end_marker;
+    fired_pixel_stream_out << stream_end_marker; // let next stage know that the stream is over
 
     return;
 }
@@ -45,7 +48,7 @@ void add_pixel_to_subcluster(hls::stream<fired_pixel>& fired_pixel_stream_in,
 {
     fired_pixel fp;
     fired_pixel_stream_in >> fp;
-    
+
     cluster_bounds sc; // subcluster
 
     cluster_bounds sc_new_event;
@@ -123,7 +126,8 @@ void add_pixel_to_subcluster(hls::stream<fired_pixel>& fired_pixel_stream_in,
     return;
 }
 
-void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int num_lines, cluster clusters[]) {
+void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int num_lines, cluster clusters[])
+{
     //#pragma hls interface …
 
     hls::stream<fired_pixel> fired_pixel_stream_A, fired_pixel_stream_B, fired_pixel_stream_C;
