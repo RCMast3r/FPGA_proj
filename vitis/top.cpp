@@ -8,7 +8,10 @@
  * @param num_lines the number of lines in the input file to read
  * @param fired_pixel_stream_out the stream of fired pixels, non-empty events, and end markers
  */
-void read_input_lines(fired_pixel input_file_lines[], unsigned int num_lines, hls::stream<fired_pixel>& fired_pixel_stream_out)
+void read_input_lines(
+    fired_pixel input_file_lines[],
+    unsigned int num_lines,
+    hls::stream<fired_pixel>& fired_pixel_stream_out)
 {
     fired_pixel prev_line = input_file_lines[0]; // first entry
 
@@ -42,7 +45,8 @@ void read_input_lines(fired_pixel input_file_lines[], unsigned int num_lines, hl
  * @param subcluster_stream stream to output subclusters to
  * @param fired_pixel_stream_out passes along the fired pixels to the next stage
  */
-void add_pixel_to_subcluster(hls::stream<fired_pixel>& fired_pixel_stream_in,
+void add_pixel_to_subcluster(
+    hls::stream<fired_pixel>& fired_pixel_stream_in,
     hls::stream<cluster_bounds>& subcluster_stream,
     hls::stream<fired_pixel>& fired_pixel_stream_out)
 {
@@ -125,6 +129,112 @@ void add_pixel_to_subcluster(hls::stream<fired_pixel>& fired_pixel_stream_in,
     // b/c the end marker condition already did so
     return;
 }
+
+/**
+ * @brief Find final cluster boundaries given a streams of subclusters and pixels
+ * 
+ * @param subcluster_stream input stream of subclusters from column-pairs
+ * @param fired_pixel_stream_in stream of fired pixels (and event/end markers)
+ * @param cluster_bounds_stream output stream of final cluster boundaries
+ * @param fired_pixel_stream_out passes along the fired pixels to the next stage
+ */
+void stitch_subclusters(
+    hls::stream<cluster_bounds>& subcluster_stream,
+    hls::stream<fired_pixel>& fired_pixel_stream_in,
+    hls::stream<cluster_bounds>& cluster_bounds_stream,
+    hls::stream<fired_pixel>& fired_pixel_stream_out)
+{
+    ap_uint<2> R_edge = 0, L_edge = 1, next_R_edge = 2; // avoids copying between arrays
+    static bit_t edges[3][512]; // partition on the [3] dimension // is bit_t actually efficient or should we pack a uint? : static for zero init.
+    static col_idx_t edge_valid_range[3]; // 0=none valid : avoids zeroing BRAM : ?also part. on the [3] dimension? : 10 bits needed, hence col type
+    col_idx_t R_edge_col_idx, L_edge_col_idx, next_R_edge_col_idx;
+    fired_pixel fp;
+    cluster_bounds sc;
+    fired_pixel_stream_in >> fp; // first stream entries will be new event markers
+    subcluster_stream >> sc;
+    ID_t curr_event = fp.ID;
+    static cluster_bounds accum_subclusters[256];
+    bool sc_end = false, fp_end = false, sc_wait = false, fp_wait = false, reinit = false, first_col_pair = true;
+
+    while (true) // only ONE exit condition - when both streams have ended
+    {
+        if (!fp_end && !fp_wait)
+        {
+            fired_pixel_stream_in >> fp;
+            if (fp.is_end)
+            {
+                fp_end = true;
+            }
+            else if (fp.is_new_event)
+            {
+                if (sc_wait) // if sc was waiting on fp to catch up, it no longer has to
+                {
+                    sc_wait = false;
+                    curr_event = fp.ID;
+                    reinit = true;
+                }
+                else // if not, then fp will have to wait on sc to catch up
+                {
+                    fp_wait = true;
+                }
+            }
+            else // is a fired pixel
+            {
+                col_idx_t C = fp.coords.col; row_idx_t R = fp.coords.row;
+                bool is_left_edge = (C % 2) == 0;
+                ap_uint<2> curr_edge = (is_left_edge ? L_edge : next_R_edge);
+                edges[curr_edge][R] = 1;
+                edge_valid_range[curr_edge] = 1 + R; // # is the *exclusive* right extent of validity, hence + 1
+            }
+            fired_pixel_stream_out << fp; // pass along fired pixels
+        }
+        if (!sc_end && !sc_wait) {
+            subcluster_stream >> sc;
+            if (sc.is_end)
+            {
+                sc_end = true;
+            }
+            else if (sc.is_new_event)
+            {
+                if (fp_wait) // if fp was waiting on sc to catch up, it no longer has to
+                {
+                    fp_wait = false;
+                    curr_event = sc.ID;
+                    reinit = true;
+                }
+                else // if not, then sc will have to wait on fp to catch up
+                {
+                    sc_wait = true;
+                }
+            }
+            else // is a subcluster
+            {
+                // TBD
+            }
+        }
+
+        if (reinit)
+        {
+            // init local variables
+            // send off remaining clusters b/c we are in a new event
+            // send cluster output stream the new event marker
+
+            // TBD
+        }
+
+        if (fp_end && sc_end)
+        {
+            // TBD
+
+            // send off remaining subclusters b/c there are no more subcluster to stitch
+
+            //cluster_bounds_stream << ; // let next stage know there are no more clusters
+            break;
+        }
+    }
+
+    return;
+};
 
 void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int num_lines, cluster clusters[])
 {
