@@ -42,6 +42,44 @@ struct fired_pixel {
         coordinates coords; // coordinates of the fired pixel in the event grid
         ID_t ID; // ID of the new event
     };
+
+    // we need a default constructor b/c compiler can't know which union member we want to initialize
+    // data is not an event nor end marker by default, so initialize primary data type
+    fired_pixel() : is_end{}, is_new_event{}, coords{} {}
+
+    // copy assignment operator
+    fired_pixel& operator=(const fired_pixel& other) {
+        if (this != &other) {  // protect against self-assignment
+            is_end = other.is_end;
+            is_new_event = other.is_new_event;
+
+            if (is_new_event == 0) {
+                coords = other.coords;
+            } else {
+                ID = other.ID;
+            }
+        }
+        return *this;
+    }
+
+    // equality test
+    bool operator==(const fired_pixel& other) const {
+        if (is_end != other.is_end || is_new_event != other.is_new_event) {
+            return false;
+        }
+        if (is_new_event == 0) {
+            return (
+                coords.col == other.coords.col &&
+                coords.row == other.coords.row
+            );
+        }
+        else { return ID == other.ID; }
+    }
+
+    // non-equality test
+    bool operator!=(const fired_pixel& other) const {
+        return !(*this == other);
+    }
 };
 
 /**
@@ -73,6 +111,45 @@ struct cluster_bounds {
         box_bounds bounds; // indices of the (sub)cluster's bounding box
         ID_t ID; // ID of the new event
     };
+
+    // we need a default constructor b/c compiler can't know which union member we want to initialize
+    // data is not an event nor end marker by default, so initialize primary data type
+    cluster_bounds() : is_end{}, is_new_event{}, bounds{} {}
+
+    // copy assignment operator
+    cluster_bounds& operator=(const cluster_bounds& other) {
+        if (this != &other) {  // protect against self-assignment
+            is_end = other.is_end;
+            is_new_event = other.is_new_event;
+
+            if (is_new_event == 0) {
+                bounds = other.bounds;
+            } else {
+                ID = other.ID;
+            }
+        }
+        return *this;
+    }
+
+    // equality test
+    bool operator==(const cluster_bounds& other) const {
+        if (is_end != other.is_end || is_new_event != other.is_new_event) {
+            return false;
+        }
+        if (is_new_event == 0) {
+            return (
+                bounds.L == other.bounds.L &&
+                bounds.R == other.bounds.R &&
+                bounds.T == other.bounds.T &&
+                bounds.B == other.bounds.B
+            );
+        } else { return ID == other.ID; }
+    }
+
+    // non-equality test
+    bool operator!=(const cluster_bounds& other) const {
+        return !(*this == other);
+    }
 };
 
 // Topic 3 says max. fired pixels in a cluster is 16
