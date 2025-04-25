@@ -1,6 +1,8 @@
 #include <header.h>
 #include "hls_stream.h"
 
+#define DEBUG_TOP 1
+
 /**
  * @brief This functions reads in lines from the input file in DRAM over AXI into a stream and removes empty events
  * 

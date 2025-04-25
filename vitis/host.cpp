@@ -2,7 +2,7 @@
 
 using namespace std;
 
-#define DEBUG 1
+#define DEBUG_HOST 1
 
 int main () {
     return 0;
