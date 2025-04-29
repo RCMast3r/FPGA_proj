@@ -74,6 +74,37 @@ void read_input_lines(
     return;
 }
 
+#if DEBUG>=2
+void log_sent_sc(cluster_bounds sc)
+{
+    if (sc.is_end)
+    {
+        std::cout << "sent end marker" << std::endl;
+    }
+    else if (sc.is_new_event)
+    {
+        std::cout << "sent event ID: " <<
+            std::hex <<
+            (unsigned int)(sc.ID) <<
+            std::endl;
+    }
+    else
+    {
+        std::cout << "sent subcluster (L: " <<
+            std::hex <<
+            (unsigned int)(sc.bounds.L) <<
+            ", R: " <<
+            (unsigned int)(sc.bounds.R) <<
+            ", T: " <<
+            (unsigned int)(sc.bounds.T) <<
+            ", B: " <<
+            (unsigned int)(sc.bounds.B) <<
+            ")" <<
+            std::endl;
+    }
+}
+#endif
+
 /**
  * @brief This functions reads fired pixels and finds clusters within column pairs
  * 
@@ -104,16 +135,21 @@ void add_pixel_to_subcluster(
 
     while (true) // loop MUST only have ONE exit condition ("break" in this case) for dataflow 
     {
-
         fired_pixel_stream_in >> fp;
 
         if (fp.is_end)
         {
             subcluster_stream << sc; // b/c no more pixels will be added to subcluster
+#if DEBUG==2
+            log_sent_sc(sc);
+#endif
 
             cluster_bounds subcluster_stream_end_marker;
             subcluster_stream_end_marker.is_end = 1;
             subcluster_stream << subcluster_stream_end_marker; // let outputs know about end
+#if DEBUG==2
+            log_sent_sc(sc);
+#endif
 
             fired_pixel_stream_out << fp; // always pass along the fired_pixel data (no need to alter it for next stage)
             break;
@@ -121,11 +157,17 @@ void add_pixel_to_subcluster(
         else if (fp.is_new_event)
         {
             subcluster_stream << sc; // b/c no more pixels will be added to subcluster
+#if DEBUG==2
+            log_sent_sc(sc);
+#endif
 
             new_sc_event == true; // if a new event starts, the next pixel will be the first added to the subcluster
 
             sc_new_event.ID = fp.ID;
             subcluster_stream << sc_new_event; // let outputs know about new events
+#if DEBUG==2
+            log_sent_sc(sc);
+#endif
 
             fired_pixel_stream_out << fp; // always pass along the fired_pixel data (no need to alter it for next stage)
         }
@@ -140,6 +182,9 @@ void add_pixel_to_subcluster(
             if (new_sc_event || not_adjacent || new_col_pair) // this pixel is NOT part of prev subcluster
             {
                 subcluster_stream << sc; // the prev subcluster is complete
+#if DEBUG==2
+                log_sent_sc(sc);
+#endif
 
                 sc.bounds.L = C; // init new subcluster based on first fired pixel
                 sc.bounds.R = C;
