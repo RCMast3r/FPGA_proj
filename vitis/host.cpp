@@ -1,15 +1,10 @@
 #include <header.h>
 
-
-
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <vector>
 #include <string>
-
-#include "fired_pixel.h"    // your fired_pixel definition
-#include "cluster.h"        // your cluster definition
 
 using namespace std;
 
