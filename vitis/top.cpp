@@ -300,11 +300,9 @@ void analyze_clusters(
             sum_r=0;
             sum_c=0;
             for(int i=0;i<256;i++)
-                {
-                    key[i]=0;
-                }
-            continue;
-
+            {
+                key[i]=0;
+            }
         }
 
         else
