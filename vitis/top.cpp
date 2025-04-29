@@ -3,6 +3,8 @@
 
 #define DEBUG_TOP 1
 
+
+
 /**
  * @brief This functions reads in lines from the input file in DRAM over AXI into a stream and removes empty events
  * 
@@ -32,6 +34,8 @@ void read_input_lines(
 
         prev_line = curr_line;
     }
+
+    // TBD check if the last line is a fired pixel (i think it always is) and write to stream 
 
     fired_pixel stream_end_marker;
     stream_end_marker.is_end = 1;
@@ -242,139 +246,132 @@ fired_pixel fp_array[num_lines];
 
 void copy_fp_to_bram(hls::stream<fired_pixel>&fired_pixel_stream_C)
 {
+    int idx=0;
 
-int idx=0;
-
-while(!fired_pixel_stream_C.empty())
-{
-    fired_pixel_stream_C >> fp_array[idx];
-    idx++;
-}
-
+    while(!fired_pixel_stream_C.empty())
+    {
+        fired_pixel_stream_C >> fp_array[idx];
+        idx++;
+    }
 }
 
 void analyze_clusters(
     hls::stream<cluster_bounds>& cluster_bounds_stream,
     hls::stream<fired_pixel>&fired_pixel_stream_C, 
     hls::stream<cluster>& cluster_stream)
+{
+    ID_t present_cluster_id;
+    cluster_bounds final_cluster;
+    bit_t have_to_process=0;
+
+    bit_t key[256];
+
+    typedef ap_uint<4> relative_pos;
+
+    ap_uint<12> sum_r=0;
+    ap_uint<10> sum_c=0;
+
+    relative_pos rr, cc;
+
+
+
+    for(int i=0;i<256;i++)
     {
-        ID_t present_cluster_id;
-        cluster_bounds final_cluster;
-        bit_t have_to_process=0;
+        key[i]=0;
+    }
 
-        bit_t key[256];
+    while(true)
+    {
+        cluster_bounds_stream >> final_cluster;
 
-        typedef ap_uint<4> relative_pos;
-
-        ap_uint<12> sum_r=0;
-        ap_uint<10> sum_c=0;
-
-        relative_pos rr, cc;
-
-
-
-        for(int i=0;i<256;i++)
+        if(final_cluster.is_end)
         {
-            key[i]=0;
+            cluster cluster_end;
+            cluster_end.is_end =1;
+            cluster_stream << cluster_end;
+
+            break;
+
         }
 
-        while(true)
+        else if(final_cluster.is_new_event)
         {
-            cluster_bounds_stream >> final_cluster;
+            present_cluster_id = final_cluster.ID;
+            sum_r=0;
+            sum_c=0;
+            for(int i=0;i<256;i++)
+                {
+                    key[i]=0;
+                }
+            continue;
 
-            if(final_cluster.is_end)
+        }
+
+        else
+        {
+            cluster output_cluster;
+            output_cluster.num_fired =0;
+
+
+            output_cluster.num_columns = final_cluster.bounds.R - final_cluster.bounds.L ;
+            output_cluster.num_rows = final_cluster.bounds.B - final_cluster.bounds.T ;
+            
+
+            //fired_pixel fp;
+
+            for(idx=0;idx<num_lines;idx++)
             {
-                cluster cluster_end;
-                cluster_end.is_end =1;
-                cluster_stream << cluster_end;
-
+            
+            if(fp_array[idx].is_end)
+            {
                 break;
-
             }
 
-            else if(final_cluster.is_new_event)
+
+
+            if(fp_array[idx].is_new_event)
             {
-                present_cluster_id = final_cluster.ID;
-                sum_r=0;
-                sum_c=0;
-                for(int i=0;i<256;i++)
-                    {
-                        key[i]=0;
-                    }
-                continue;
+                if(fp_array[idx].ID == present_cluster_id)
+                {
 
+                    have_to_process =1;
+                    continue;
+                }
+                else
+                {
+                    have_to_process =0;
+                }
             }
 
-            else
+            else if(have_to_process)
             {
-                cluster output_cluster;
-                output_cluster.num_fired =0;
-
-
-                output_cluster.num_columns = final_cluster.bounds.R - final_cluster.bounds.L ;
-                output_cluster.num_rows = final_cluster.bounds.B - final_cluster.bounds.T ;
-                
-
-                //fired_pixel fp;
-
-                for(idx=0;idx<num_lines;idx++)
+                if(fp_array[idx].coords.col <= final_cluster.bounds.R && fp_array[idx].coords.col>= final_cluster.bounds.L && fp_array[idx].coords.row <= final_cluster.bounds.B && fp_array[idx].coords.row >=  final_cluster.bounds.T )
                 {
-                
-                if(fp_array[idx].is_end)
-                {
-                    break;
-                }
+                    output_cluster.num_fired++;
 
+                    rr = fp_array[idx].coords.row - final_cluster.bounds.T;
+                    cc = fp_array[idx].coords.col - final_cluster.bounds.L;
 
+                    key[rr*output_cluster.num_columns +cc] = 1;
 
-                if(fp_array[idx].is_new_event)
-                {
-                    if(fp_array[idx].ID == present_cluster_id)
-                    {
-
-                        have_to_process =1;
-                        continue;
-                    }
-                    else
-                    {
-                        have_to_process =0;
-                    }
-                }
-
-                else if(have_to_process)
-                {
-                    if(fp_array[idx].coords.col <= final_cluster.bounds.R && fp_array[idx].coords.col>= final_cluster.bounds.L && fp_array[idx].coords.row <= final_cluster.bounds.B && fp_array[idx].coords.row >=  final_cluster.bounds.T )
-                    {
-                        output_cluster.num_fired++;
-
-                        rr = fp_array[idx].coords.row - final_cluster.bounds.T;
-                        cc = fp_array[idx].coords.col - final_cluster.bounds.L;
-
-                        key[rr*output_cluster.num_columns +cc] = 1;
-
-                        sum_r += fp_array[idx].coords.row;
-                        sum_c += fp_array[idx].coords.col;
-
-                    }
-
+                    sum_r += fp_array[idx].coords.row;
+                    sum_c += fp_array[idx].coords.col;
 
                 }
-
-                }
-
-                output_cluster.key = key;
-                output_cluster.centre_of_mass_x_cord = sum_r/output_cluster.num_fired;
-                output_cluster.centre_of_mass_y_cord = sum_c/output_cluster.num_fired;
-
-                cluster_stream << output_cluster;
-
-                
-
 
 
             }
+
+            }
+
+            output_cluster.key = key;
+            output_cluster.centre_of_mass_x_cord = sum_r/output_cluster.num_fired;
+            output_cluster.centre_of_mass_y_cord = sum_c/output_cluster.num_fired;
+
+            cluster_stream << output_cluster;
         }
     }
+}
 
 
 void write_clusters(
@@ -402,11 +399,9 @@ void write_clusters(
             }
         }
     }
-    
-
 }
 
-void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int num_lines, cluster clusters[], Max_cluster_count)
+void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int num_lines, cluster clusters[],  Max_cluster_count)
 {
     //#pragma hls interface …
 
