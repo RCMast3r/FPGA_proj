@@ -1,8 +1,6 @@
 #include <header.h>
 #include "hls_stream.h"
 
-#define DEBUG_TOP 1
-
 /**
  * @brief This functions reads in lines from the input file in DRAM over AXI into a stream and removes empty events
  * 
@@ -247,15 +245,62 @@ void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int nu
     hls::stream<cluster> cluster_stream;
 
     #pragma hls dataflow
-    // Read Stage
-    // Stage 1 – Column Pair Clustering
-    // Stage 2 – Cluster Stitching
-    // Stage 3 – Find Cluster Keys
-    // Write Stage
+    // Stage 1 - Read to Stream
+    // Stage 2 – Column Pair Clustering
+    // Stage 3 – Cluster Stitching
+    // Stage 4 – Find Cluster Keys
+    // Stage 5 - Write from Stream
 
     read_input_lines(input_file_lines, num_lines, fired_pixel_stream_A); // suppresses empty events
     add_pixel_to_subcluster(fired_pixel_stream_A, subcluster_stream, fired_pixel_stream_B);
-    //stitch_subclusters(subcluster_stream, fired_pixel_stream_B, cluster_bounds_stream, fired_pixel_stream_C);
+    stitch_subclusters(subcluster_stream, fired_pixel_stream_B, cluster_bounds_stream, fired_pixel_stream_C);
     //analyze_clusters(cluster_bounds_stream, fired_pixel_stream_C, cluster_stream);
     //write_clusters(cluster_stream, clusters);
 }
+
+// Stage Debugging for C-sim
+
+#ifdef DEBUG
+void debug_stage(fired_pixel input_file_lines[], unsigned int num_lines)
+{
+    //#pragma hls interface …
+#if DEBUG >= 1
+    hls::stream<fired_pixel> fired_pixel_stream_A, fired_pixel_stream_B, fired_pixel_stream_C;
+#endif
+
+#if DEBUG >= 2
+    hls::stream<cluster_bounds> subcluster_stream, cluster_bounds_stream;
+#endif
+
+#if DEBUG >= 4
+    hls::stream<cluster> cluster_stream;
+#endif
+
+    #pragma hls dataflow
+    // Stage 1 - Read to Stream
+    // Stage 2 – Column Pair Clustering
+    // Stage 3 – Cluster Stitching
+    // Stage 4 – Find Cluster Keys
+    // Stage 5 - Write from Stream
+#if DEBUG >= 1
+    read_input_lines(input_file_lines, num_lines, fired_pixel_stream_A); // suppresses empty events
+#endif
+
+#if DEBUG >= 2
+    add_pixel_to_subcluster(fired_pixel_stream_A, subcluster_stream, fired_pixel_stream_B);
+#endif
+
+#if DEBUG >= 3
+    stitch_subclusters(subcluster_stream, fired_pixel_stream_B, cluster_bounds_stream, fired_pixel_stream_C);
+#endif
+
+#if DEBUG >= 4
+    analyze_clusters(cluster_bounds_stream, fired_pixel_stream_C, cluster_stream);
+#endif
+
+#if DEBUG >= 5
+    write_clusters(cluster_stream, clusters);
+#endif
+}
+
+#endif
