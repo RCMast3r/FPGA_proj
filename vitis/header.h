@@ -15,9 +15,23 @@
 //#include <fstream>
 //#include <hls_math.h>
 //#include <iostream>
-//#include <stdio.h>
+#include <stdio.h>
+#include <string>
+#include <map>
 //#include <stdlib.h>
 #include <algorithm>
+
+std::map<unsinged int, unsigned int> input_length_map = {
+    {0, 12259},
+    {1, 12000},
+    {2, 11553},
+    {3, },
+    {4, },
+    {5, },
+    {6, },
+    {7, },
+    {8, },
+};
 
 typedef ap_uint<10> col_idx_t; // Column Index: 1024 Columns -> log2(1024) = 10
 typedef ap_uint<9>  row_idx_t; // Row Index: 512 Rows -> log2(512) = 9
