@@ -148,7 +148,7 @@ void add_pixel_to_subcluster(
             subcluster_stream_end_marker.is_end = 1;
             subcluster_stream << subcluster_stream_end_marker; // let outputs know about end
 #if DEBUG==2
-            log_sent_sc(sc);
+            log_sent_sc(subcluster_stream_end_marker);
 #endif
 
             fired_pixel_stream_out << fp; // always pass along the fired_pixel data (no need to alter it for next stage)
@@ -166,7 +166,7 @@ void add_pixel_to_subcluster(
             sc_new_event.ID = fp.ID;
             subcluster_stream << sc_new_event; // let outputs know about new events
 #if DEBUG==2
-            log_sent_sc(sc);
+            log_sent_sc(sc_new_event);
 #endif
 
             fired_pixel_stream_out << fp; // always pass along the fired_pixel data (no need to alter it for next stage)
