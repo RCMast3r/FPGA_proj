@@ -184,15 +184,29 @@ void add_pixel_to_subcluster(
             bool new_col_pair = (C / 2) != (prev_C / 2); // is this pixel in a different column-pair than the prev pixel?
             bool not_adjacent = std::max(C - prev_C, (ap_int<11>)(R - prev_R)) > 1; // must cast right argument to match left arg
 
-            if (new_sc_event || not_adjacent || new_col_pair) // this pixel is NOT part of prev subcluster
+            if (new_sc_event) // this pixel is NOT part of prev subcluster
             {
-                if (!first_event)
+                if (!first_event) // the first new event won't have a prior sc, so don't write to stream in this case
                 {
                     subcluster_stream << sc; // the prev subcluster is complete
 #if DEBUG==2
                     log_sent_sc(sc);
 #endif
                 }
+
+                new_sc_event = false;
+
+                sc.bounds.L = C; // init new subcluster based on first fired pixel
+                sc.bounds.R = C;
+                sc.bounds.T = R;
+                sc.bounds.B = R;
+            }
+            else if (not_adjacent || new_col_pair) // this pixel is NOT part of prev subcluster
+            {
+                subcluster_stream << sc; // the prev subcluster is complete
+#if DEBUG==2
+                log_sent_sc(sc);
+#endif
 
                 sc.bounds.L = C; // init new subcluster based on first fired pixel
                 sc.bounds.R = C;
