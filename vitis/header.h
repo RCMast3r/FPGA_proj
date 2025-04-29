@@ -25,17 +25,17 @@
 //#include <fstream>
 //#include <hls_math.h>
 
-std::map<unsigned int, unsigned int> input_length_map = {
-    {0, 12259},
-    {1, 12000},
-    {2, 11553},
-    {3, 12318},
-    {4, 12402},
-    {5, 13067},
-    {6, 13000},
-    {7, 15030},
-    {8, 12817},
-};
+// std::map<unsigned int, unsigned int> input_length_map = {
+//     {0, 12259},
+//     {1, 12000},
+//     {2, 11553},
+//     {3, 12318},
+//     {4, 12402},
+//     {5, 13067},
+//     {6, 13000},
+//     {7, 15030},
+//     {8, 12817},
+// };
 
 typedef ap_uint<10> col_idx_t; // Column Index: 1024 Columns -> log2(1024) = 10
 typedef ap_uint<9>  row_idx_t; // Row Index: 512 Rows -> log2(512) = 9
