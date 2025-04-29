@@ -125,7 +125,10 @@ void add_pixel_to_subcluster(
     cluster_bounds sc_new_event;
     sc_new_event.is_new_event = 1;
     sc_new_event.ID = fp.ID; // we know first stream entry is the new event info
-    subcluster_stream      << sc_new_event;
+    subcluster_stream << sc_new_event;
+#if DEBUG==2
+    log_sent_sc(sc_new_event);
+#endif
 
     fired_pixel_stream_out << fp; // first fired pixel entry will just be a new event marker, so pass it along
 
