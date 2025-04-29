@@ -134,6 +134,7 @@ void add_pixel_to_subcluster(
 
     col_idx_t prev_C; row_idx_t prev_R;
 
+    bool first_event = true;
     bool new_sc_event = true;
 
     while (true) // loop MUST only have ONE exit condition ("break" in this case) for dataflow 
@@ -184,11 +185,14 @@ void add_pixel_to_subcluster(
 
             if (new_sc_event || not_adjacent || new_col_pair) // this pixel is NOT part of prev subcluster
             {
-                subcluster_stream << sc; // the prev subcluster is complete
+                if (!first_event)
+                {
+                    subcluster_stream << sc; // the prev subcluster is complete
 #if DEBUG==2
-                log_sent_sc(sc);
+                    log_sent_sc(sc);
 #endif
-
+                }
+                
                 sc.bounds.L = C; // init new subcluster based on first fired pixel
                 sc.bounds.R = C;
                 sc.bounds.T = R;
