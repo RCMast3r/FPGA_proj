@@ -165,7 +165,8 @@ void add_pixel_to_subcluster(
             log_sent_sc(sc);
 #endif
 
-            new_sc_event == true; // if a new event starts, the next pixel will be the first added to the subcluster
+            first_event = false;
+            new_sc_event = true; // if a new event starts, the next pixel will be the first added to the subcluster
 
             sc_new_event.ID = fp.ID;
             subcluster_stream << sc_new_event; // let outputs know about new events
@@ -192,7 +193,7 @@ void add_pixel_to_subcluster(
                     log_sent_sc(sc);
 #endif
                 }
-                
+
                 sc.bounds.L = C; // init new subcluster based on first fired pixel
                 sc.bounds.R = C;
                 sc.bounds.T = R;
