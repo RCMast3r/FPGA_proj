@@ -1,6 +1,8 @@
 #include <header.h>
 #include "hls_stream.h"
 
+#define DEBUG_TOP 1
+
 /**
  * @brief This functions reads in lines from the input file in DRAM over AXI into a stream and removes empty events
  * 
@@ -236,7 +238,175 @@ void stitch_subclusters(
     return;
 };
 
-void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int num_lines, cluster clusters[])
+fired_pixel fp_array[num_lines];
+
+void copy_fp_to_bram(hls::stream<fired_pixel>&fired_pixel_stream_C)
+{
+
+int idx=0;
+
+while(!fired_pixel_stream_C.empty())
+{
+    fired_pixel_stream_C >> fp_array[idx];
+    idx++;
+}
+
+}
+
+void analyze_clusters(
+    hls::stream<cluster_bounds>& cluster_bounds_stream,
+    hls::stream<fired_pixel>&fired_pixel_stream_C, 
+    hls::stream<cluster>& cluster_stream)
+    {
+        ID_t present_cluster_id;
+        cluster_bounds final_cluster;
+        bit_t have_to_process=0;
+
+        bit_t key[256];
+
+        typedef ap_uint<4> relative_pos;
+
+        ap_uint<12> sum_r=0;
+        ap_uint<10> sum_c=0;
+
+        relative_pos rr, cc;
+
+
+
+        for(int i=0;i<256;i++)
+        {
+            key[i]=0;
+        }
+
+        while(true)
+        {
+            cluster_bounds_stream >> final_cluster;
+
+            if(final_cluster.is_end)
+            {
+                cluster cluster_end;
+                cluster_end.is_end =1;
+                cluster_stream << cluster_end;
+
+                break;
+
+            }
+
+            else if(final_cluster.is_new_event)
+            {
+                present_cluster_id = final_cluster.ID;
+                sum_r=0;
+                sum_c=0;
+                for(int i=0;i<256;i++)
+                    {
+                        key[i]=0;
+                    }
+                continue;
+
+            }
+
+            else
+            {
+                cluster output_cluster;
+                output_cluster.num_fired =0;
+
+
+                output_cluster.num_columns = final_cluster.bounds.R - final_cluster.bounds.L ;
+                output_cluster.num_rows = final_cluster.bounds.B - final_cluster.bounds.T ;
+                
+
+                //fired_pixel fp;
+
+                for(idx=0;idx<num_lines;idx++)
+                {
+                
+                if(fp_array[idx].is_end)
+                {
+                    break;
+                }
+
+
+
+                if(fp_array[idx].is_new_event)
+                {
+                    if(fp_array[idx].ID == present_cluster_id)
+                    {
+
+                        have_to_process =1;
+                        continue;
+                    }
+                    else
+                    {
+                        have_to_process =0;
+                    }
+                }
+
+                else if(have_to_process)
+                {
+                    if(fp_array[idx].coords.col <= final_cluster.bounds.R && fp_array[idx].coords.col>= final_cluster.bounds.L && fp_array[idx].coords.row <= final_cluster.bounds.B && fp_array[idx].coords.row >=  final_cluster.bounds.T )
+                    {
+                        output_cluster.num_fired++;
+
+                        rr = fp_array[idx].coords.row - final_cluster.bounds.T;
+                        cc = fp_array[idx].coords.col - final_cluster.bounds.L;
+
+                        key[rr*output_cluster.num_columns +cc] = 1;
+
+                        sum_r += fp_array[idx].coords.row;
+                        sum_c += fp_array[idx].coords.col;
+
+                    }
+
+
+                }
+
+                }
+
+                output_cluster.key = key;
+                output_cluster.centre_of_mass_x_cord = sum_r/output_cluster.num_fired;
+                output_cluster.centre_of_mass_y_cord = sum_c/output_cluster.num_fired;
+
+                cluster_stream << output_cluster;
+
+                
+
+
+
+            }
+        }
+    }
+
+
+void write_clusters(
+    hls::stream<cluster> &cluster_stream,
+    cluster              *out_buf,       // pointer to a pre‐allocated DRAM region
+    int                    max_clusters, // size of out_buf[]
+) {
+
+
+    int idx = 0;
+    cluster c;
+    
+    // keep reading until we see the end marker
+    while (true) {
+    #pragma HLS PIPELINE II=1
+        if (!cluster_stream.empty()) {
+            cluster_stream >> c;
+            if (c.is_end) {
+                break;
+            }
+            // guard against overflowing the DRAM buffer
+            if (idx < max_clusters) {
+                out_buf[idx] = c;
+                idx++;
+            }
+        }
+    }
+    
+
+}
+
+void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int num_lines, cluster clusters[], Max_cluster_count)
 {
     //#pragma hls interface …
 
@@ -245,62 +415,15 @@ void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int nu
     hls::stream<cluster> cluster_stream;
 
     #pragma hls dataflow
-    // Stage 1 - Read to Stream
-    // Stage 2 – Column Pair Clustering
-    // Stage 3 – Cluster Stitching
-    // Stage 4 – Find Cluster Keys
-    // Stage 5 - Write from Stream
+    // Read Stage
+    // Stage 1 – Column Pair Clustering
+    // Stage 2 – Cluster Stitching
+    // Stage 3 – Find Cluster Keys
+    // Write Stage
 
     read_input_lines(input_file_lines, num_lines, fired_pixel_stream_A); // suppresses empty events
     add_pixel_to_subcluster(fired_pixel_stream_A, subcluster_stream, fired_pixel_stream_B);
-    stitch_subclusters(subcluster_stream, fired_pixel_stream_B, cluster_bounds_stream, fired_pixel_stream_C);
+    //stitch_subclusters(subcluster_stream, fired_pixel_stream_B, cluster_bounds_stream, fired_pixel_stream_C);
     //analyze_clusters(cluster_bounds_stream, fired_pixel_stream_C, cluster_stream);
-    //write_clusters(cluster_stream, clusters);
+    //write_clusters(cluster_stream, clusters, Max_cluster_count);
 }
-
-// Stage Debugging for C-sim
-
-#ifdef DEBUG
-void debug_stage(fired_pixel input_file_lines[], unsigned int num_lines)
-{
-    //#pragma hls interface …
-#if DEBUG >= 1
-    hls::stream<fired_pixel> fired_pixel_stream_A, fired_pixel_stream_B, fired_pixel_stream_C;
-#endif
-
-#if DEBUG >= 2
-    hls::stream<cluster_bounds> subcluster_stream, cluster_bounds_stream;
-#endif
-
-#if DEBUG >= 4
-    hls::stream<cluster> cluster_stream;
-#endif
-
-    #pragma hls dataflow
-    // Stage 1 - Read to Stream
-    // Stage 2 – Column Pair Clustering
-    // Stage 3 – Cluster Stitching
-    // Stage 4 – Find Cluster Keys
-    // Stage 5 - Write from Stream
-#if DEBUG >= 1
-    read_input_lines(input_file_lines, num_lines, fired_pixel_stream_A); // suppresses empty events
-#endif
-
-#if DEBUG >= 2
-    add_pixel_to_subcluster(fired_pixel_stream_A, subcluster_stream, fired_pixel_stream_B);
-#endif
-
-#if DEBUG >= 3
-    stitch_subclusters(subcluster_stream, fired_pixel_stream_B, cluster_bounds_stream, fired_pixel_stream_C);
-#endif
-
-#if DEBUG >= 4
-    analyze_clusters(cluster_bounds_stream, fired_pixel_stream_C, cluster_stream);
-#endif
-
-#if DEBUG >= 5
-    write_clusters(cluster_stream, clusters);
-#endif
-}
-
-#endif

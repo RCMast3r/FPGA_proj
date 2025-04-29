@@ -1,14 +1,6 @@
 #ifndef COL_CLUST_HEADER
 #define COL_CLUST_HEADER
 
-// comment out to remove debuging
-// 1 to debug stage 1
-// 2 to debug stage 2
-// 3 to debug stage 3
-// 4 to debug stage 4
-// 5 to debug stage 5
-#define DEBUG 1
-
 #include <ap_int.h>
 #include <cstdint>
 //#include <cstdlib>
@@ -187,10 +179,20 @@ typedef ap_uint<(2 * fired_pixels_per_cluster_bits)> box_bounds_idx_t;
  * @brief stores all information about a pixel cluster
  */
 struct cluster {
+
+    bit_t is_end;
+
     ID_t ID; // Event ID Number
-    box_bounds bounds; // bounding box of the cluster
+    typedef ap_uint<fired_pixels_per_cluster_bits> num_columns;
+    typedef ap_uint<fired_pixels_per_cluster_bits> num_rows;
+
+    col_idx_t centre_of_mass_y_cord;
+    row_idx_t centre_of_mass_x_cord;
+
+    //box_bounds bounds; // bounding box of the cluster
     num_fired_t num_fired; // number of fired pixels in the cluster
-    box_bounds_idx_t key[max_num_fired_pixels_per_cluster]; // locations of the fired pixels in the cluster
+    //box_bounds_idx_t key[max_num_fired_pixels_per_cluster]; // locations of the fired pixels in the cluster
+    bit_t key[256];
     // tbd? add center of mass AKA centroid
 };
 
@@ -203,11 +205,4 @@ struct cluster {
  */
 void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int num_lines, cluster clusters[]);
 
-// Stage Debugging for C-sim
-
-#ifdef DEBUG
-void debug_stage(fired_pixel input_file_lines[], unsigned int num_lines);
-#endif
-
-// endif for the preprocessor that prevents including this header twice
 #endif
