@@ -1,6 +1,14 @@
 #ifndef COL_CLUST_HEADER
 #define COL_CLUST_HEADER
 
+// comment out to remove debuging
+// 1 to debug stage 1
+// 2 to debug stage 2
+// 3 to debug stage 3
+// 4 to debug stage 4
+// 5 to debug stage 5
+#define DEBUG 1
+
 #include <ap_int.h>
 #include <cstdint>
 //#include <cstdlib>
@@ -195,4 +203,11 @@ struct cluster {
  */
 void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int num_lines, cluster clusters[]);
 
+// Stage Debugging for C-sim
+
+#ifdef DEBUG
+void debug_stage(fired_pixel input_file_lines[], unsigned int num_lines);
+#endif
+
+// endif for the preprocessor that prevents including this header twice
 #endif
