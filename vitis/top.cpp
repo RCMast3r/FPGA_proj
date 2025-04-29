@@ -31,6 +31,11 @@ void read_input_lines(
         prev_line = curr_line;
     }
 
+    // check if the last line was a fired pixel, if so, send it off too
+    if (!(prev_line.is_new_event)) {
+        fired_pixel_stream_out << prev_line;
+    }
+
     fired_pixel stream_end_marker;
     stream_end_marker.is_end = 1;
     fired_pixel_stream_out << stream_end_marker; // let next stage know that the stream is over
