@@ -134,7 +134,6 @@ void add_pixel_to_subcluster(
 
     col_idx_t prev_C; row_idx_t prev_R;
 
-    bool first_event = true;
     bool new_sc_event = true;
 
     while (true) // loop MUST only have ONE exit condition ("break" in this case) for dataflow 
@@ -165,7 +164,6 @@ void add_pixel_to_subcluster(
             log_sent_sc(sc);
 #endif
 
-            first_event = false;
             new_sc_event = true; // if a new event starts, the next pixel will be the first added to the subcluster
 
             sc_new_event.ID = fp.ID;
@@ -186,13 +184,7 @@ void add_pixel_to_subcluster(
 
             if (new_sc_event) // this pixel is NOT part of prev subcluster
             {
-                if (!first_event) // the first new event won't have a prior sc, so don't write to stream in this case
-                {
-                    subcluster_stream << sc; // the prev subcluster is complete
-#if DEBUG==2
-                    log_sent_sc(sc);
-#endif
-                }
+                // no need to write the last sc b/c the is_new_event check already did that 
 
                 new_sc_event = false;
 
