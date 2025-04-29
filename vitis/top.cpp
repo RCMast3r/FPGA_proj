@@ -26,14 +26,45 @@ void read_input_lines(
         if (prev_is_pixel || prev_not_empty_event)
         {
             fired_pixel_stream_out << prev_line;
+
+#if DEBUG==1
+            if (prev_is_pixel)
+            {
+                std::cout << "pixel (C: " <<
+                    std::hex <<
+                    (unsigned int)(prev_line.coords.col) <<
+                    ", R: " <<
+                    (unsigned int)(prev_line.coords.row) <<
+                    ")" <<
+                    std::endl;
+            }
+            else
+            {
+                std::cout << "(non-empty) event ID: " <<
+                std::hex <<
+                (unsigned int)prev_line.ID <<
+                std::endl;
+            }
+#endif
         }
 
         prev_line = curr_line;
     }
 
     // check if the last line was a fired pixel, if so, send it off too
-    if (!(prev_line.is_new_event)) {
+    if (!(prev_line.is_new_event))
+    {
         fired_pixel_stream_out << prev_line;
+
+#if DEBUG==1
+        std::cout << "Final Case: sent pixel (C: " <<
+            std::hex <<
+            (unsigned int)(prev_line.coords.col) <<
+            ", R: " <<
+            (unsigned int)(prev_line.coords.row) <<
+            ")" <<
+            std::endl;
+#endif
     }
 
     fired_pixel stream_end_marker;
