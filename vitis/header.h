@@ -11,15 +11,19 @@
 
 #include <ap_int.h>
 #include <cstdint>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <string>
+#include <map>
+#include <algorithm>
+
+//#include <stdio.h>
+//#include <stdlib.h>
 //#include <cstdlib>
 //#include <fstream>
 //#include <hls_math.h>
-//#include <iostream>
-#include <stdio.h>
-#include <string>
-#include <map>
-//#include <stdlib.h>
-#include <algorithm>
 
 std::map<unsigned int, unsigned int> input_length_map = {
     {0, 12259},
