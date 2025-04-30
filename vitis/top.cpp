@@ -243,17 +243,39 @@ void stitch_subclusters(
     static bit_t edges[3][512]; // partition on the [3] dimension // is bit_t actually efficient or should we pack a uint? : static for zero init.
     static col_idx_t edge_valid_range[3]; // 0=none valid : avoids zeroing BRAM : ?also part. on the [3] dimension? : 10 bits needed, hence col type
     col_idx_t R_edge_col_idx, L_edge_col_idx, next_R_edge_col_idx;
+
     fired_pixel fp;
     cluster_bounds sc;
     fired_pixel_stream_in >> fp; // first stream entries will be new event markers
     subcluster_stream >> sc;
+
     ID_t curr_event = fp.ID;
+
     static cluster_bounds accum_subclusters[256];
-    bool sc_end = false, fp_end = false, sc_wait = false, fp_wait = false, reinit = false, first_col_pair = true;
+
+    col_idx_t prev_C;
+
+    // Stream synchronization booleans
+    bool sc_end = false, fp_end = false, sc_wait_for_fp_to_get_event = false, fp_wait_for_sc_to_get_event = false;
+    
+    bool sc_waiting_for_next_col_pair = false;
+    bool sc_waiting_for_edge_validity = false;
+    bool fp_has_resolved_edge_validity = false;
+
+    bool fp_waiting_for_stiching_to_finish = false;
+
+    // Other state booleans
+    bool fp_first_pixel_of_new_event = true;
+
+    bool reinit = false, first_col_pair = true;
+
+    fired_pixel buffer_fp;
+    cluster_bounds buffer_sc;
 
     while (true) // only ONE exit condition - when both streams have ended
     {
-        if (!fp_end && !fp_wait)
+        bool fp_is_waiting = fp_wait_for_sc_to_get_event;
+        if (!fp_end && !fp_is_waiting)
         {
             fired_pixel_stream_in >> fp;
             if (fp.is_end)
@@ -262,28 +284,44 @@ void stitch_subclusters(
             }
             else if (fp.is_new_event)
             {
-                if (sc_wait) // if sc was waiting on fp to catch up, it no longer has to
+                if (sc_wait_for_fp_to_get_event) // if sc was waiting on fp to catch up, it no longer has to
                 {
-                    sc_wait = false;
+                    sc_wait_for_fp_to_get_event = false;
                     curr_event = fp.ID;
                     reinit = true;
                 }
                 else // if not, then fp will have to wait on sc to catch up
                 {
-                    fp_wait = true;
+                    fp_wait_for_sc_to_get_event = true;
                 }
             }
             else // is a fired pixel
             {
+                // TBD: If the fired pixel stream gets to a new column-pair ahead of the stitching
+                //      Save the fired_pixel b/c we won't have an edge array to add it to yet
+                //      Signal a need to change edges and pause the fired pixel ingest
+
                 col_idx_t C = fp.coords.col; row_idx_t R = fp.coords.row;
-                bool is_left_edge = (C % 2) == 0;
+
+                bool new_col_pair = (C / 2) != (prev_C / 2); // is this pixel in a different column-pair than the prev pixel?
+
+                if (fp_first_pixel_of_new_event)
+                {
+                    // skip the new_col_pair_check
+                }
+
+                bool is_left_edge = ((C % 2) == 0);
                 ap_uint<2> curr_edge = (is_left_edge ? L_edge : next_R_edge);
                 edges[curr_edge][R] = 1;
                 edge_valid_range[curr_edge] = 1 + R; // # is the *exclusive* right extent of validity, hence + 1
+
+                prev_C = C;
             }
             fired_pixel_stream_out << fp; // pass along fired pixels
         }
-        if (!sc_end && !sc_wait) {
+        
+        bool sc_is_waiting = sc_wait_for_fp_to_get_event || sc_waiting_for_edge_validity || sc_waiting_for_next_col_pair;
+        if (!sc_end && !sc_is_waiting) {
             subcluster_stream >> sc;
             if (sc.is_end)
             {
@@ -291,15 +329,15 @@ void stitch_subclusters(
             }
             else if (sc.is_new_event)
             {
-                if (fp_wait) // if fp was waiting on sc to catch up, it no longer has to
+                if (fp_wait_for_sc_to_get_event) // if fp was waiting on sc to catch up, it no longer has to
                 {
-                    fp_wait = false;
+                    fp_wait_for_sc_to_get_event = false;
                     curr_event = sc.ID;
                     reinit = true;
                 }
                 else // if not, then sc will have to wait on fp to catch up
                 {
-                    sc_wait = true;
+                    sc_wait_for_fp_to_get_event = true;
                 }
             }
             else // is a subcluster
@@ -308,9 +346,11 @@ void stitch_subclusters(
             }
         }
 
-        if (reinit)
+        if (reinit) // occrs when both streams have hit a new event
         {
             // init local variables
+            fp_first_pixel_of_new_event = true;
+
             // send off remaining clusters b/c we are in a new event
             // send cluster output stream the new event marker
 
