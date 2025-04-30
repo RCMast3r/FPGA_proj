@@ -233,7 +233,132 @@ void add_pixel_to_subcluster(
  * @param cluster_bounds_stream output stream of final cluster boundaries
  * @param fired_pixel_stream_out passes along the fired pixels to the next stage
  */
-void stitch_subclusters(
+ void stitch_subclusters(
+    hls::stream<cluster_bounds>& subcluster_stream,
+    hls::stream<fired_pixel>& fired_pixel_stream_in,
+    hls::stream<cluster_bounds>& cluster_bounds_stream,
+    hls::stream<fired_pixel>& fired_pixel_stream_out)
+{
+    // we have a growing accumulated (acc) region
+    // which grows as we append adjacent (adj) column pair regions to the right
+
+    // we don't need to know the left edge of the accumulated region
+    col_idx_t acc_right_edge_C;
+    bit_t acc_right_edge[512];
+
+    col_idx_t adj_left_edge_C; // no need to store the right col idx, as it is this plus one
+    bit_t adj_left_edge[512];
+    bit_t adj_right_edge[512];
+
+    cluster_bounds acc_subclusters[256];
+
+    fired_pixel first_fp_of_next_col_pair;
+    cluster_bounds first_sc_of_next_col_pair;
+
+    fired_pixel fp;
+    cluster_bounds sc;
+
+    // -------------------
+
+    // initially read out the first event markers & pass along
+    fired_pixel_stream_in >> fp;
+    fired_pixel_stream_out << fp;
+    subcluster_stream >> sc;
+    cluster_bounds_stream << sc;
+
+    //bool fp_is_end = false; // no need to track since sc stream will be sync with fp stream
+    bool sc_is_end = false;
+    //bool is_end = false;
+
+    while(!sc_is_end)
+    {
+        #pragma hls pipeline
+
+        // void reinit_local_variables()
+        // for each in array -> set to zero
+        //      don't reset arrays that should carry over between outer loop iterations
+
+        bool fp_in_current_col_pair = true;
+
+        // void read_next_col_pair()
+        while (fp_in_current_col_pair)
+        {
+            // if we had a carry over between column pairs, 
+            if (have_next_fp) 
+            {
+                fp = first_fp_of_next_col_pair
+            }
+            else
+            {
+                fired_pixel_stream_in >> fp;
+            }
+
+            // should move one once the column pair is done
+            // - an fp from a new col pair in the same event arrives
+            // - a new event is seen
+            // - the stream end arrived
+            if (fp.is_end)
+            {
+                // a stream end in the first column means we
+                //fp_is_end = true;
+                fp_in_current_col_pair = false;
+            }
+            else if (fp.is_new_event)
+            {
+                fp_in_current_col_pair = false;
+            }
+            else // is a fired pixel
+            {                
+                //col_idx_t C = fp.coords.col;
+                row_idx_t R = fp.coords.row;
+
+                row_idx_t curr_col_pair; // TBD
+                fp_in_current_col_pair; // TBD
+
+                if (!fp_in_current_col_pair) // pixel is in the next column pair, so save it for later
+                {
+                    first_fp_of_next_col_pair = fp;
+                    fp_in_current_col_pair = false;
+                }
+                else // pixel is in the same column pair, so add it to the edge array
+                {
+                    bool is_left_edge; // TBD
+
+                    if (is_left_edge)
+                    {
+                        adj_left_edge[R] = 1;
+                    }
+                    else
+                    {
+                        adj_right_edge[R] = 1;
+                    }
+
+                    // prev_C = C; etc
+                }
+            }
+
+            fired_pixel_stream_out << fp;
+        }
+        
+        // stitch_next_subclusters()
+
+        if (sc_is_end)
+        {
+            is_end
+        }
+
+    }
+}
+
+/**
+ * @brief OLD Version Find final cluster boundaries given a streams of subclusters and pixels
+ * 
+ * @param subcluster_stream input stream of subclusters from column-pairs
+ * @param fired_pixel_stream_in stream of fired pixels (and event/end markers)
+ * @param cluster_bounds_stream output stream of final cluster boundaries
+ * @param fired_pixel_stream_out passes along the fired pixels to the next stage
+ */
+void stitch_subclusters_OLD(
     hls::stream<cluster_bounds>& subcluster_stream,
     hls::stream<fired_pixel>& fired_pixel_stream_in,
     hls::stream<cluster_bounds>& cluster_bounds_stream,
