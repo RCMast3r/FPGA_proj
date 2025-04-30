@@ -72,6 +72,7 @@ void read_input_lines(
 #endif
     }
 
+
     fired_pixel stream_end_marker;
     stream_end_marker.is_end = 1;
     fired_pixel_stream_out << stream_end_marker; // let next stage know that the stream is over
@@ -478,7 +479,14 @@ void analyze_clusters(
 
     relative_pos rr, cc;
 
+    for(int i=0;i<256;i++)
+    {
+        key[i]=0;
+    }
 
+    while(true)
+    {
+        cluster_bounds_stream >> final_cluster;
 
     for(int i=0;i<256;i++)
     {
@@ -533,8 +541,6 @@ void analyze_clusters(
                 break;
             }
 
-
-
             if(fp_array[idx].is_new_event)
             {
                 if(fp_array[idx].ID == present_cluster_id)
@@ -564,7 +570,6 @@ void analyze_clusters(
                     sum_c += fp_array[idx].coords.col;
 
                 }
-
 
             }
 
@@ -619,7 +624,6 @@ void write_clusters(
         }
     }
 }
-
 
 void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int num_lines, cluster clusters[],int max_cluster)
 {

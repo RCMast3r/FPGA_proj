@@ -18,7 +18,7 @@ int main (int argc, char *argv[]) {
     // // conditional addition of "../data/" to start of filename
     // std::string redirect = "../data/";
 
-
+  
     std::cout << "HOST: entered main(), argc=" << argc << "\n";
     if (argc < 2) {
         std::cerr << "Usage: " << argv[0] << " <input_test_file.txt>\n";
