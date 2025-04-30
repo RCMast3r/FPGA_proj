@@ -1,21 +1,27 @@
-#include <header.h>
+#include "header.h"
 
-
-
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <vector>
-#include <string>
-
-#include "fired_pixel.h"    // your fired_pixel definition
-#include "cluster.h"        // your cluster definition
+// const bool IS_INPUT_LOCAL = false;
 
 using namespace std;
 
-int main(int argc, char** argv) {
+// void read_input_file(const char *filename, fired_pixel file_line_array[])
+// {
+//     FILE *file = fopen(filename, "r");
+//     if (!file)
+//     {
+//         perror("Failed to open file");
+//         exit(1);
+//     }
+// }
+
+int main (int argc, char *argv[]) {
+    // // conditional addition of "../data/" to start of filename
+    // std::string redirect = "../data/";
+
+
+    std::cout << "HOST: entered main(), argc=" << argc << "\n";
     if (argc < 2) {
-        std::cerr << "Usage: " << argv[0] << " <input_file.txt>\n";
+        std::cerr << "Usage: " << argv[0] << " <input_test_file.txt>\n";
         return 1;
     }
 
@@ -61,20 +67,18 @@ int main(int argc, char** argv) {
     // 3) Number of lines
     unsigned int num_lines = inputs.size();
     std::cout << "Read " << num_lines << " fired_pixel entries\n";
-    int Max_cluster_count = 100000000;
+    int max_cluster_count = 1000;
 
     // 4) Allocate output buffer (size <= num_lines)
-    std::vector<cluster> clusters(Max_cluster_count);
+    std::vector<cluster> clusters(max_cluster_count);
 
     // 5) Call your HLS kernel
     HLS_kernel_columnar_cluster(
-        inputs.data(),
+        inputs.data(), // TBD: Vitis may or may not like this way of making an array
         num_lines,
         clusters.data(),
-        Max_cluster_count
+	max_cluster_count
     );
-
-
 
     return 0;
 }
