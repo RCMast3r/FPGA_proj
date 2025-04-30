@@ -250,7 +250,8 @@ void add_pixel_to_subcluster(
     bit_t adj_left_edge[512];
     bit_t adj_right_edge[512];
 
-    cluster_bounds acc_subclusters[256];
+    cluster_bounds curr_acc_subclusters[256];
+    cluster_bounds next_acc_subclusters[256];
 
     fired_pixel first_fp_of_next_col_pair;
     cluster_bounds first_sc_of_next_col_pair;
@@ -276,9 +277,13 @@ void add_pixel_to_subcluster(
 
         // void reinit_local_variables()
         // for each in array -> set to zero
+        //      acc arrays should use the is_end bit to mark empty scs 
         //      don't reset arrays that should carry over between outer loop iterations
 
         bool fp_in_current_col_pair = true;
+        bool sc_in_current_col_pair = true;
+
+        bool sc_is_new_event = false;
 
         // void read_next_col_pair()
         while (fp_in_current_col_pair)
@@ -305,6 +310,8 @@ void add_pixel_to_subcluster(
             }
             else if (fp.is_new_event)
             {
+                // no need to set a flag to track this
+                // because the sc stream will be in sync with this one and encounter the event too
                 fp_in_current_col_pair = false;
             }
             else // is a fired pixel
@@ -340,13 +347,115 @@ void add_pixel_to_subcluster(
             fired_pixel_stream_out << fp;
         }
         
-        // stitch_next_subclusters()
-
-        if (sc_is_end)
+        // void stitch_next_subclusters()
+        while (sc_in_current_col_pair)
         {
-            is_end
+            // if we had a carry over between column pairs, 
+            if (have_next_sc) 
+            {
+                sc = first_sc_of_next_col_pair
+            }
+            else
+            {
+                subcluster_stream >> sc;
+            }
+
+            // should move one once the column pair is done
+            // - an sc from a new col pair in the same event arrives
+            // - a new event is seen
+            // - the stream end arrived
+            if (sc.is_end)
+            {
+                // a stream end in the first column means we
+                sc_is_end = true;
+                sc_in_current_col_pair = false;
+
+                // send out reamining sc
+
+                // send along end marker
+
+                // do NOT break, as new event would also do that
+                // loops in dataflows can't have two exit conditions
+            }
+            else if (sc.is_new_event)
+            {
+                sc_is_new_event = true;
+                sc_in_current_col_pair = false;
+
+                // send out remaining sc
+
+                // send along event marker
+
+                // do NOT break, as new event would also do that
+                // loops in dataflows can't have two exit conditions
+            }
+            else // is a subcluster
+            {                
+                sc_in_current_col_pair; // TBD
+
+                if (!sc_in_current_col_pair) // pixel is in the next column pair, so save it for later
+                {
+                    first_sc_of_next_col_pair = sc;
+                    fp_in_current_col_pair = false;
+
+                    //send out remaining sc in acc
+                }
+                else // sc is in the same column pair
+                {
+                    // is it within the adj left edge?
+                    bool in_left_edge; //TBD
+                    if (!in_left_edge) {
+                        // subclusters in the right edge can't get stitched
+                        // so don't bother trying to stitch it
+
+                        // add it to the next set of acc subclusters
+                    }
+                    else // it is possible the sc could be stitched
+                    {
+                        // go through all curr sc from the acc region
+                        bool acc_sc_is_end = false;
+                        unsigned int acc_sc_idx = 0;
+                        do
+                        {
+                            cluster_bounds acc_sc = curr_acc_subclusters[acc_sc_idx];
+                            acc_send_is_end = acc_sc.is_end;
+                            if (!acc_sc_is_end) // we have another subcluster from the acc. region
+                            {
+                                
+                            }
+                            acc_sc_idx++;
+                            if (acc_sc_idx >= 256)
+                            {
+                                acc_sc_is_end = true;
+                            }
+                        }
+                        while(!acc_sc_is_end);
+                    }
+                }
+            }
+
+            fired_pixel_stream_out << fp;
         }
 
+        // void handle_end_conditions()
+        if (sc_is_end)
+        {
+            // if the streams are over, no need to reinit or manage arrays
+            // stitch_sc has already written out the 
+        }
+        else
+        {
+            if (sc_is_new_event) // new event means we may need to reset some local variables
+            {
+                // do we need to do anything
+                // i guess we need to write out the remaining sc from the acc
+                //      or should this be handled in stitch_subclusters? - yes
+            }
+            else // the next column pair is in the same event, so manage variables as normal
+            {
+                // the adj_right_edge array will become the acc_left_edge, so do a copy
+            }
+        }
     }
 }
 
