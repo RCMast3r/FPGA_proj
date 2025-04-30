@@ -441,19 +441,21 @@ void add_pixel_to_subcluster(
         if (sc_is_end)
         {
             // if the streams are over, no need to reinit or manage arrays
-            // stitch_sc has already written out the 
+            // stitch_sc has already written out the remaining sc
         }
         else
         {
             if (sc_is_new_event) // new event means we may need to reset some local variables
             {
                 // do we need to do anything
-                // i guess we need to write out the remaining sc from the acc
-                //      or should this be handled in stitch_subclusters? - yes
+                // stitch_sc has already written out the remaining sc
             }
             else // the next column pair is in the same event, so manage variables as normal
             {
                 // the adj_right_edge array will become the acc_left_edge, so do a copy
+                // go through the sc arrays, send out sc's that won't be in the acc right edge
+                // b/c they can't be stitched next time
+                // also 
             }
         }
     }
