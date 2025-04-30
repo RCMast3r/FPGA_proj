@@ -1,9 +1,9 @@
-#include <header.h>
+#include "header.h"
 #include "hls_stream.h"
+#include "hls_print.h"
 
-#define DEBUG_TOP 1
 
-
+int NUM_LINES_GLOBAL=0;
 
 /**
  * @brief This functions reads in lines from the input file in DRAM over AXI into a stream and removes empty events
@@ -12,6 +12,7 @@
  * @param num_lines the number of lines in the input file to read
  * @param fired_pixel_stream_out the stream of fired pixels, non-empty events, and end markers
  */
+
 void read_input_lines(
     fired_pixel input_file_lines[],
     unsigned int num_lines,
@@ -30,12 +31,47 @@ void read_input_lines(
         if (prev_is_pixel || prev_not_empty_event)
         {
             fired_pixel_stream_out << prev_line;
+
+#if DEBUG==1
+            if (prev_is_pixel)
+            {
+                std::cout << "pixel (C: " <<
+                    std::hex <<
+                    (unsigned int)(prev_line.coords.col) <<
+                    ", R: " <<
+                    (unsigned int)(prev_line.coords.row) <<
+                    ")" <<
+                    std::endl;
+            }
+            else
+            {
+                std::cout << "(non-empty) event ID: " <<
+                std::hex <<
+                (unsigned int)prev_line.ID <<
+                std::endl;
+            }
+#endif
         }
 
         prev_line = curr_line;
     }
 
-    // TBD check if the last line is a fired pixel (i think it always is) and write to stream 
+    // check if the last line was a fired pixel, if so, send it off too
+    if (!(prev_line.is_new_event))
+    {
+        fired_pixel_stream_out << prev_line;
+
+#if DEBUG==1
+        std::cout << "Final Case: sent pixel (C: " <<
+            std::hex <<
+            (unsigned int)(prev_line.coords.col) <<
+            ", R: " <<
+            (unsigned int)(prev_line.coords.row) <<
+            ")" <<
+            std::endl;
+#endif
+    }
+
 
     fired_pixel stream_end_marker;
     stream_end_marker.is_end = 1;
@@ -43,6 +79,82 @@ void read_input_lines(
 
     return;
 }
+
+#if DEBUG>=2
+void log_sent_sc(cluster_bounds sc)
+{
+    if (sc.is_end)
+    {
+        std::cout << "sent end marker" << std::endl;
+    }
+    else if (sc.is_new_event)
+    {
+        std::cout << "sent event ID: " <<
+            std::hex <<
+            (unsigned int)(sc.ID) <<
+            std::endl;
+    }
+    else
+    {
+        std::cout << "sent subcluster (L: " <<
+            std::hex <<
+            (unsigned int)(sc.bounds.L) <<
+            ", R: " <<
+            (unsigned int)(sc.bounds.R) <<
+            ", T: " <<
+            (unsigned int)(sc.bounds.T) <<
+            ", B: " <<
+            (unsigned int)(sc.bounds.B) <<
+            ")" <<
+            std::endl;
+    }
+}
+#endif
+
+#if DEBUG>=4
+void log_sent_output_cluster(cluster output_cluster)
+{
+    if (output_cluster.is_end)
+    {
+        std::cout << "sent end marker" << std::endl;
+    }
+    else //if (sc.is_new_event)
+   {
+        std::cout << "sent event ID: " <<
+            std::hex <<
+            (unsigned int)(output_cluster.ID) <<
+            std::endl;
+   // }
+  //  else
+   // {
+        std::cout << "num_columns " <<
+            std::hex <<
+            (unsigned int)(output_cluster.num_columns) <<
+            ", num_rows: " <<
+            (unsigned int)(output_cluster.num_rows) <<
+	    ", num_fired: " <<
+	    (unsigned int)(output_cluster.num_fired) <<
+            ")" <<
+            std::endl;
+
+	std::cout<<", com_y: " <<
+            (ap_fixed<13,3>)(output_cluster.centre_of_mass_y_cord) <<
+            ", com_x: " <<
+            (ap_fixed<12,3>)(output_cluster.centre_of_mass_x_cord) <<
+	    std::endl;
+
+	    for(int j=0;j<256;j++)
+            {
+		if(j>=(output_cluster.num_rows *output_cluster.num_columns))
+			{
+				break;
+			}
+            	std::cout << static_cast<int>( output_cluster.key[j] );
+	    }
+	    std::cout<< std::endl;
+    }
+}
+#endif
 
 /**
  * @brief This functions reads fired pixels and finds clusters within column pairs
@@ -64,7 +176,10 @@ void add_pixel_to_subcluster(
     cluster_bounds sc_new_event;
     sc_new_event.is_new_event = 1;
     sc_new_event.ID = fp.ID; // we know first stream entry is the new event info
-    subcluster_stream      << sc_new_event;
+    subcluster_stream << sc_new_event;
+#if DEBUG==2
+    log_sent_sc(sc_new_event);
+#endif
 
     fired_pixel_stream_out << fp; // first fired pixel entry will just be a new event marker, so pass it along
 
@@ -74,16 +189,21 @@ void add_pixel_to_subcluster(
 
     while (true) // loop MUST only have ONE exit condition ("break" in this case) for dataflow 
     {
-
         fired_pixel_stream_in >> fp;
 
         if (fp.is_end)
         {
             subcluster_stream << sc; // b/c no more pixels will be added to subcluster
+#if DEBUG==2
+            log_sent_sc(sc);
+#endif
 
             cluster_bounds subcluster_stream_end_marker;
             subcluster_stream_end_marker.is_end = 1;
             subcluster_stream << subcluster_stream_end_marker; // let outputs know about end
+#if DEBUG==2
+            log_sent_sc(subcluster_stream_end_marker);
+#endif
 
             fired_pixel_stream_out << fp; // always pass along the fired_pixel data (no need to alter it for next stage)
             break;
@@ -91,11 +211,17 @@ void add_pixel_to_subcluster(
         else if (fp.is_new_event)
         {
             subcluster_stream << sc; // b/c no more pixels will be added to subcluster
+#if DEBUG==2
+            log_sent_sc(sc);
+#endif
 
-            new_sc_event == true; // if a new event starts, the next pixel will be the first added to the subcluster
+            new_sc_event = true; // if a new event starts, the next pixel will be the first added to the subcluster
 
             sc_new_event.ID = fp.ID;
             subcluster_stream << sc_new_event; // let outputs know about new events
+#if DEBUG==2
+            log_sent_sc(sc_new_event);
+#endif
 
             fired_pixel_stream_out << fp; // always pass along the fired_pixel data (no need to alter it for next stage)
         }
@@ -107,9 +233,23 @@ void add_pixel_to_subcluster(
             bool new_col_pair = (C / 2) != (prev_C / 2); // is this pixel in a different column-pair than the prev pixel?
             bool not_adjacent = std::max(C - prev_C, (ap_int<11>)(R - prev_R)) > 1; // must cast right argument to match left arg
 
-            if (new_sc_event || not_adjacent || new_col_pair) // this pixel is NOT part of prev subcluster
+            if (new_sc_event) // this pixel is NOT part of prev subcluster
+            {
+                // no need to write the last sc b/c the is_new_event check already did that 
+
+                new_sc_event = false;
+
+                sc.bounds.L = C; // init new subcluster based on first fired pixel
+                sc.bounds.R = C;
+                sc.bounds.T = R;
+                sc.bounds.B = R;
+            }
+            else if (not_adjacent || new_col_pair) // this pixel is NOT part of prev subcluster
             {
                 subcluster_stream << sc; // the prev subcluster is complete
+#if DEBUG==2
+                log_sent_sc(sc);
+#endif
 
                 sc.bounds.L = C; // init new subcluster based on first fired pixel
                 sc.bounds.R = C;
@@ -242,7 +382,73 @@ void stitch_subclusters(
     return;
 };
 
-fired_pixel fp_array[num_lines];
+//---------------------------------------------------------------------------
+// Push exactly 10 items into `cluster_bounds_stream`, finishing with
+// an end‐marker (is_end=1).
+//---------------------------------------------------------------------------
+#if DEBUG>=4
+void fill_cluster_bounds_stream(hls::stream<cluster_bounds>& cluster_bounds_stream) {
+    cluster_bounds cb;
+
+    // 1) New event, ID=3
+    cb.is_end       = 0;
+    cb.is_new_event = 1;
+    cb.ID           = (ID_t)3;
+    cluster_bounds_stream.write(cb);
+
+    // 2) box [L=0,R=3,T=0,B=5]
+    cb.is_end       = 0;
+    cb.is_new_event = 0;
+    cb.bounds.L     = 0;
+    cb.bounds.R     = 3;
+    cb.bounds.T     = 0;
+    cb.bounds.B     = 5;
+    cluster_bounds_stream.write(cb);
+
+    // 3) box [L=6,R=7,T=0,B=1]
+    cb.bounds.L = 6; cb.bounds.R = 7; cb.bounds.T = 0; cb.bounds.B = 1;
+    cluster_bounds_stream.write(cb);
+
+    // 4) box [L=2,R=3,T=7,B=8]
+    cb.bounds.L = 2; cb.bounds.R = 3; cb.bounds.T = 7; cb.bounds.B = 8;
+    cluster_bounds_stream.write(cb);
+
+    // 5) box [L=0,R=1,T=8,B=9]
+    cb.bounds.L = 0; cb.bounds.R = 1; cb.bounds.T = 8; cb.bounds.B = 9;
+    cluster_bounds_stream.write(cb);
+
+    // 6) box [L=0,R=0,T=11,B=11]
+    cb.bounds.L = 0; cb.bounds.R = 0; cb.bounds.T = 11; cb.bounds.B = 11;
+    cluster_bounds_stream.write(cb);
+
+    // 7) box [L=2,R=2,T=11,B=11]
+    cb.bounds.L = 2; cb.bounds.R = 2; cb.bounds.T = 11; cb.bounds.B = 11;
+    cluster_bounds_stream.write(cb);
+
+    // 8) New event, ID=4
+    cb.is_end       = 0;
+    cb.is_new_event = 1;
+    cb.ID           = (ID_t)4;
+    cluster_bounds_stream.write(cb);
+
+    // 9) box [L=6,R=6,T=2,B=2]
+    cb.is_end       = 0;
+    cb.is_new_event = 0;
+    cb.bounds.L     = 6;
+    cb.bounds.R     = 6;
+    cb.bounds.T     = 2;
+    cb.bounds.B     = 2;
+    cluster_bounds_stream.write(cb);
+
+    // 10) End‐marker
+    cb.is_end       = 1;
+    cb.is_new_event = 0;
+    // (bounds/ID fields don’t matter when is_end==1)
+    cluster_bounds_stream.write(cb);
+}
+#endif
+
+fired_pixel fp_array[100];
 
 void copy_fp_to_bram(hls::stream<fired_pixel>&fired_pixel_stream_C)
 {
@@ -273,7 +479,14 @@ void analyze_clusters(
 
     relative_pos rr, cc;
 
+    for(int i=0;i<256;i++)
+    {
+        key[i]=0;
+    }
 
+    while(true)
+    {
+        cluster_bounds_stream >> final_cluster;
 
     for(int i=0;i<256;i++)
     {
@@ -286,9 +499,9 @@ void analyze_clusters(
 
         if(final_cluster.is_end)
         {
-            cluster cluster_end;
-            cluster_end.is_end =1;
-            cluster_stream << cluster_end;
+           cluster cluster_end;
+           cluster_end.is_end =1;
+           cluster_stream << cluster_end;
 
             break;
 
@@ -309,23 +522,24 @@ void analyze_clusters(
         {
             cluster output_cluster;
             output_cluster.num_fired =0;
+	    sum_r =0;
+	    sum_c =0;
 
 
-            output_cluster.num_columns = final_cluster.bounds.R - final_cluster.bounds.L ;
-            output_cluster.num_rows = final_cluster.bounds.B - final_cluster.bounds.T ;
+
+            output_cluster.num_columns = final_cluster.bounds.R - final_cluster.bounds.L +1;
+            output_cluster.num_rows = final_cluster.bounds.B - final_cluster.bounds.T +1;
             
 
             //fired_pixel fp;
 
-            for(idx=0;idx<num_lines;idx++)
+            for(int idx=0;idx<NUM_LINES_GLOBAL;idx++)
             {
             
             if(fp_array[idx].is_end)
             {
                 break;
             }
-
-
 
             if(fp_array[idx].is_new_event)
             {
@@ -357,16 +571,26 @@ void analyze_clusters(
 
                 }
 
-
             }
 
             }
 
-            output_cluster.key = key;
-            output_cluster.centre_of_mass_x_cord = sum_r/output_cluster.num_fired;
-            output_cluster.centre_of_mass_y_cord = sum_c/output_cluster.num_fired;
+	    for(int j=0;j<256;j++)
+	    {
+		if(j>=(output_cluster.num_rows *output_cluster.num_columns))
+                   {
+                      output_cluster.key[j] = -1; 
+                      break;
+                   }
+		output_cluster.key[j] = key[j];
+	    }
+            output_cluster.centre_of_mass_x_cord = (ap_fixed<12,3>) sum_r/output_cluster.num_fired;
+            output_cluster.centre_of_mass_y_cord = (ap_fixed<13,3>) sum_c/output_cluster.num_fired;
 
             cluster_stream << output_cluster;
+#if DEBUG>=4
+	    log_sent_output_cluster(output_cluster);
+ #endif
         }
     }
 }
@@ -375,48 +599,105 @@ void analyze_clusters(
 void write_clusters(
     hls::stream<cluster> &cluster_stream,
     cluster              *out_buf,       // pointer to a pre‐allocated DRAM region
-    int                    max_clusters, // size of out_buf[]
+    int                    max_clusters // size of out_buf[]
 ) {
 
 
     int idx = 0;
     cluster c;
-    
+//    std::cout<<"Entred last function\n";
     // keep reading until we see the end marker
     while (true) {
     #pragma HLS PIPELINE II=1
         if (!cluster_stream.empty()) {
             cluster_stream >> c;
             if (c.is_end) {
+//		    std::cout<<"reached end\n";
                 break;
             }
             // guard against overflowing the DRAM buffer
             if (idx < max_clusters) {
                 out_buf[idx] = c;
+//		std::cout<<"pushed 1 cluster to dram\n";
                 idx++;
             }
         }
     }
 }
 
-void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int num_lines, cluster clusters[],  Max_cluster_count)
+void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int num_lines, cluster clusters[],int max_cluster)
 {
+//    std:: cout <<"Entred\n";
     //#pragma hls interface …
-
+    NUM_LINES_GLOBAL = num_lines;
     hls::stream<fired_pixel> fired_pixel_stream_A, fired_pixel_stream_B, fired_pixel_stream_C;
     hls::stream<cluster_bounds> subcluster_stream, cluster_bounds_stream;
     hls::stream<cluster> cluster_stream;
 
-    #pragma hls dataflow
-    // Read Stage
-    // Stage 1 – Column Pair Clustering
-    // Stage 2 – Cluster Stitching
-    // Stage 3 – Find Cluster Keys
-    // Write Stage
+    //hls::print("Entered the main function");
+//    #pragma hls dataflow
+    // Stage 1 - Read to Stream
+    // Stage 2 – Column Pair Clustering
+    // Stage 3 – Cluster Stitching
+    // Stage 4 – Find Cluster Keys
+    // Stage 5 - Write from Stream
 
     read_input_lines(input_file_lines, num_lines, fired_pixel_stream_A); // suppresses empty events
-    add_pixel_to_subcluster(fired_pixel_stream_A, subcluster_stream, fired_pixel_stream_B);
-    //stitch_subclusters(subcluster_stream, fired_pixel_stream_B, cluster_bounds_stream, fired_pixel_stream_C);
-    //analyze_clusters(cluster_bounds_stream, fired_pixel_stream_C, cluster_stream);
-    //write_clusters(cluster_stream, clusters, Max_cluster_count);
+//    add_pixel_to_subcluster(fired_pixel_stream_A, subcluster_stream, fired_pixel_stream_B);
+//    stitch_subclusters(subcluster_stream, fired_pixel_stream_B, cluster_bounds_stream, fired_pixel_stream_C);
+#if DEBUG>=4
+    fill_cluster_bounds_stream(cluster_bounds_stream);
+#endif    
+    copy_fp_to_bram(fired_pixel_stream_C);
+    analyze_clusters(cluster_bounds_stream, fired_pixel_stream_C, cluster_stream);
+    write_clusters(cluster_stream, clusters,max_cluster);
 }
+
+// Stage Debugging for C-sim
+
+#ifdef DEBUG
+void debug_stage(fired_pixel input_file_lines[], unsigned int num_lines)
+{
+    //#pragma hls interface …
+#if DEBUG >= 1
+    hls::stream<fired_pixel> fired_pixel_stream_A, fired_pixel_stream_B, fired_pixel_stream_C;
+#endif
+
+#if DEBUG >= 2
+    hls::stream<cluster_bounds> subcluster_stream, cluster_bounds_stream;
+#endif
+
+#if DEBUG >= 4
+    hls::stream<cluster> cluster_stream;
+#endif
+
+    #pragma hls dataflow
+    // Stage 1 - Read to Stream
+    // Stage 2 – Column Pair Clustering
+    // Stage 3 – Cluster Stitching
+    // Stage 4 – Find Cluster Keys
+    // Stage 5 - Write from Stream
+#if DEBUG >= 1
+    read_input_lines(input_file_lines, num_lines, fired_pixel_stream_A); // suppresses empty events
+#endif
+
+#if DEBUG >= 2
+   // add_pixel_to_subcluster(fired_pixel_stream_A, subcluster_stream, fired_pixel_stream_B);
+#endif
+
+#if DEBUG >= 3
+    //stitch_subclusters(subcluster_stream, fired_pixel_stream_B, cluster_bounds_stream, fired_pixel_stream_C);
+#endif
+
+#if DEBUG >= 4
+    fill_cluster_bounds_stream(cluster_bounds_stream);
+    copy_fp_to_bram(fired_pixel_stream_A);
+    analyze_clusters(cluster_bounds_stream, fired_pixel_stream_C, cluster_stream);
+#endif
+
+#if DEBUG >= 5
+    write_clusters(cluster_stream, clusters);
+#endif
+}
+
+#endif

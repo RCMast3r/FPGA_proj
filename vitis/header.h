@@ -1,15 +1,41 @@
 #ifndef COL_CLUST_HEADER
 #define COL_CLUST_HEADER
 
+// comment out to remove debuging
+// 1 to debug stage 1
+// 2 to debug stage 2
+// 3 to debug stage 3
+// 4 to debug stage 4
+// 5 to debug stage 5
+#define DEBUG 2
+
 #include <ap_int.h>
 #include <cstdint>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <string>
+#include <map>
+#include <algorithm>
+
+//#include <stdio.h>
+//#include <stdlib.h>
 //#include <cstdlib>
 //#include <fstream>
 //#include <hls_math.h>
-//#include <iostream>
-//#include <stdio.h>
-//#include <stdlib.h>
-#include <algorithm>
+
+// std::map<unsigned int, unsigned int> input_length_map = {
+//     {0, 12259},
+//     {1, 12000},
+//     {2, 11553},
+//     {3, 12318},
+//     {4, 12402},
+//     {5, 13067},
+//     {6, 13000},
+//     {7, 15030},
+//     {8, 12817},
+// };
 
 typedef ap_uint<10> col_idx_t; // Column Index: 1024 Columns -> log2(1024) = 10
 typedef ap_uint<9>  row_idx_t; // Row Index: 512 Rows -> log2(512) = 9
@@ -183,11 +209,11 @@ struct cluster {
     bit_t is_end;
 
     ID_t ID; // Event ID Number
-    typedef ap_uint<fired_pixels_per_cluster_bits> num_columns;
-    typedef ap_uint<fired_pixels_per_cluster_bits> num_rows;
+    ap_uint<fired_pixels_per_cluster_bits> num_columns;
+    ap_uint<fired_pixels_per_cluster_bits> num_rows;
 
-    col_idx_t centre_of_mass_y_cord;
-    row_idx_t centre_of_mass_x_cord;
+    ap_fixed<13,3> centre_of_mass_y_cord;
+    ap_fixed<12,3> centre_of_mass_x_cord;
 
     //box_bounds bounds; // bounding box of the cluster
     num_fired_t num_fired; // number of fired pixels in the cluster
@@ -195,6 +221,13 @@ struct cluster {
     bit_t key[256];
     // tbd? add center of mass AKA centroid
 };
+//struct cluster {
+//    ID_t ID; // Event ID Number
+//   box_bounds bounds; // bounding box of the cluster
+//    num_fired_t num_fired; // number of fired pixels in the cluster
+//    box_bounds_idx_t key[max_num_fired_pixels_per_cluster]; // locations of the fired pixels in the cluster
+//    // tbd? add center of mass AKA centroid
+//};
 
 /**
  * @brief This function finds pixel clusters given a file of events.
@@ -203,6 +236,13 @@ struct cluster {
  * @param num_lines The number of lines contained in the file.
  * @param clusters DRAM array which stores any found clusters.
  */
-void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int num_lines, cluster clusters[]);
+void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int num_lines, cluster clusters[],int max_cluster);
 
+// Stage Debugging for C-sim
+
+//#ifdef DEBUG
+//void debug_stage(fired_pixel input_file_lines[], unsigned int num_lines);
+//#endif
+
+// endif for the preprocessor that prevents including this header twice
 #endif
