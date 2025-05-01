@@ -8,8 +8,17 @@
 #include <algorithm>
 #include <unordered_map>
 
-#define COLUMNS 1024
-// #define SAMPLE_MAX 512
+#include <cmath>
+#include <queue>
+
+#include "types.hpp"
+
+
+double distance(const Point &a, const Point &b)
+{
+    return std::sqrt((a.x - b.x) * (a.x - b.x) +
+                     (a.y - b.y) * (a.y - b.y));
+}
 
 struct cluster_member
 {
@@ -18,36 +27,16 @@ struct cluster_member
     uint16_t col;
 };
 
-struct cluster
+
+
+struct point
 {
-    std::vector<cluster_member> members;
-};
-
-
-
-struct point {
     int x = -1;
     int y = -1;
 };
-struct bbox {
-    point top_left;
-    point bottom_right;
-};
-struct sample
-{
-    int row = -1;
-    int col = -1;
-};
-struct subcluster
-{
-    bbox bound_box;
-    std::vector<sample> members;
-    int cluster_id = -1;
-    int event_id = -1;
-};
 
-
-int hexStringToInt(const std::string& hexString) {
+int hexStringToInt(const std::string &hexString)
+{
     int result;
     std::stringstream ss;
     ss << std::hex << hexString;
@@ -55,117 +44,109 @@ int hexStringToInt(const std::string& hexString) {
     return result;
 }
 
-void process_event(const std::vector<sample>& samples, 
-                   std::vector<std::vector<sample>>& col_pair_sets,
-                   int current_cluster_index)
+std::vector<int> region_query(const std::vector<Point> &points, int idx, double eps)
 {
-    
-    int prev_col_pair_index = (samples.front().col / 2);
-    auto prev_zig_zag_index = 2*samples.front().row + ((samples.front().row + samples.front().row)%2);
-
-    int ci = current_cluster_index;
-    
-    std::vector<sample> col_pair_set;
-    // 
-    for(const auto & sample : samples)
+    std::vector<int> neighbors;
+    for (int i = 0; i < points.size(); ++i)
     {
-        auto col_pair_index = sample.col / 2;
-        auto zig_zag_index = (2*sample.row) + ((sample.row + sample.row)%2);
-
-        if(prev_col_pair_index != col_pair_index)
+        if (distance(points[idx], points[i]) <= eps)
         {
-            col_pair_sets.push_back(col_pair_set);
-            col_pair_set.clear();
-        } else {
-            col_pair_set.push_back(sample);
+            neighbors.push_back(i);
         }
-        prev_col_pair_index = col_pair_index;
     }
-
-    // stitching the column pair sets
-
-    std::vector<std::vector<sample>> clusters;
-
-    for(size_t ind = 0; ind < (col_pair_sets.size()-1); ind+=2)
-    {
-        auto col_r = col_pair_sets[ind+1];
-        auto col_l = col_pair_sets[ind];
-    }
-    
+    return neighbors;
 }
 
-
-
-// this is done on each events samples
-std::vector<subcluster> cluster_column(const std::vector<sample>& samples, int & current_cluster_index, int event_id)
+void expand_cluster(std::vector<Point> &points, int idx, int clusterID, double eps, int minPts, std::vector<cluster> &clusters)
 {
-    std::vector<subcluster> cluster_res;
+    std::queue<int> q;
 
-    std::optional<sample> prev_sample = std::nullopt;
+    // get the neighbors around the point we are indexed at currently
+    auto neighbors = region_query(points, idx, eps);
 
-    subcluster current_subcluster;
-    for (const auto sample : samples)
+    if (neighbors.size() < minPts)
     {
-        auto column = sample.col;
-        auto row = sample.row;
-        if(!prev_sample) // first sample, must be new sub-cluster
-        {   
-            current_cluster_index++;
-            current_subcluster.event_id = event_id;
-            current_subcluster.cluster_id = current_cluster_index;
-            current_subcluster.bound_box.bottom_right.x = sample.col;
-            current_subcluster.bound_box.bottom_right.y = sample.row;
-            current_subcluster.bound_box.top_left = current_subcluster.bound_box.bottom_right;
-            current_subcluster.members.push_back(sample);
-            prev_sample = sample;
-        } else {
-            bool new_col_pair = ( (column/2) != ((prev_sample->col)/2));
-            bool new_subcluster = std::max(column - (prev_sample->col), row-(prev_sample->row)) > 1;
-            if(new_subcluster || new_col_pair)
-            {
-                cluster_res.push_back(current_subcluster);
-                current_subcluster = {};
-                current_cluster_index++;
-                current_subcluster.event_id = event_id;
-                current_subcluster.cluster_id = current_cluster_index;
-                current_subcluster.bound_box.bottom_right.x = sample.col;
-                current_subcluster.bound_box.bottom_right.y = sample.row;
-                current_subcluster.bound_box.top_left = current_subcluster.bound_box.bottom_right;
-                current_subcluster.members.push_back(sample);
+        points[idx].label = PointLabel::NOISE;
+        return;
+    }
 
-            } else {
-                current_subcluster.members.push_back(sample);
-                current_subcluster.bound_box.bottom_right.x = std::max(current_subcluster.bound_box.bottom_right.x, sample.col);
-                current_subcluster.bound_box.top_left.x = std::min(current_subcluster.bound_box.top_left.x, sample.col);
-                current_subcluster.bound_box.bottom_right.y = std::max(current_subcluster.bound_box.bottom_right.y, sample.row);
-                current_subcluster.bound_box.top_left.y = std::min(current_subcluster.bound_box.top_left.y, sample.row);
+    // if the point has neighbors set its cluster id and set its status as clustered
+    points[idx].cluster_id = clusterID;
+    points[idx].label = PointLabel::CLUSTERED;
+
+    // loop through all of the neighbors of the specific point being clustered and 
+    // see if they have been categorized yet. if they havent, add them to the cluster
+    // and then see if it has neighbors as well
+    for (int n : neighbors)
+    { // add all the neighbors to the cluster id
+        if (points[n].label == PointLabel::UNVISITED)
+        {
+            points[n].label = PointLabel::CLUSTERED;
+            points[n].cluster_id = clusterID;
+
+            // get the neighbors of these neighbors as well
+            auto subNeighbors = region_query(points, n, eps);
+            if (subNeighbors.size() >= minPts)
+            {
+                for (int sn : subNeighbors)
+                {
+                    q.push(sn);
+                }
+            }
+        }
+        else if (points[n].label == PointLabel::NOISE)
+        {
+            points[n].label = PointLabel::CLUSTERED;
+            points[n].cluster_id = clusterID;
+        }
+    }
+
+    while (!q.empty())
+    {
+        int current = q.front();
+        q.pop();
+
+        auto currentNeighbors = region_query(points, current, eps);
+        if (currentNeighbors.size() >= minPts)
+        {
+            for (int n : currentNeighbors)
+            {
+                if (points[n].label == PointLabel::UNVISITED)
+                {
+                    points[n].label = PointLabel::CLUSTERED;
+                    points[n].cluster_id = clusterID;
+                    q.push(n);
+                }
             }
         }
     }
-    cluster_res.push_back(current_subcluster);
-    return cluster_res;
 }
 
-
-std::vector<cluster> stich_subclusters(std::vector<subcluster> subclusters)
+int dbscan_algo(std::vector<Point> &points, double eps, double min_points)
 {
-    // first we go through all of the subclusters to see if any of the bboxes are connected
-    
-    // for each of the subclusters we will assume that there is only one to n full clusters per-each event id
-    
-    // for(const auto sc : subclusters)
-    // {
-    //     sc.bound_box.bottom_right
-    // }
-    return {};
+    int cluster_id = 0;
+    std::vector<cluster> clusters;
+    for (int i = 0; i < points.size(); i++)
+    {
+        if (points[i].label == PointLabel::UNVISITED)
+        {
+            expand_cluster(points, i, cluster_id, eps, min_points, clusters);
+            if (points[i].cluster_id == cluster_id)
+            {
+                ++cluster_id;
+            }
+        }
+    }
+    return cluster_id;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 
     if (argc != 2)
     {
         // show error msg - like usage program.exe filename
-        std::cout << "ERROR: missing relative filepath" <<std::endl;
+        std::cout << "ERROR: missing relative filepath" << std::endl;
         return 1;
     }
     // Path to the input text file
@@ -173,7 +154,8 @@ int main(int argc, char *argv[]) {
 
     // Open the file
     std::ifstream file(filename);
-    if (!file.is_open()) {
+    if (!file.is_open())
+    {
         std::cerr << "Error: Could not open file " << filename << std::endl;
         return 1;
     }
@@ -185,15 +167,46 @@ int main(int argc, char *argv[]) {
 
     // Read and process each line
 
-    while (std::getline(file, line)) {
+    std::vector<Point> event_points;
+    while (std::getline(file, line))
+    {
         ++line_num;
-        std::vector<sample> events_sample;
         std::smatch match;
-        if (std::regex_match(line,match, pattern)) {
-            std::cout << "Line " << line_num << ": " << hexStringToInt(match[1]) <<" "<< hexStringToInt(match[2]) << std::endl;
-        } else {
-            std::cout << "miss line" << line_num << ": " << line << std::endl;
+        if (std::regex_match(line, match, pattern))
+        {
+            // std::cout << "Line " << line_num << ": " << hexStringToInt(match[1]) <<" "<< hexStringToInt(match[2]) << std::endl;
+            Point p = {(double)hexStringToInt(match[2]), (double)hexStringToInt(match[1])};
+            event_points.push_back(p);
         }
+    }
+
+    auto max_id = dbscan_algo(event_points, 1, 1);
+    std::cout << max_id << std::endl;
+
+    std::vector<cluster> clusters;
+    clusters.resize(max_id);
+    cluster current_cluster;
+    current_cluster.cluster_id = 0;
+
+    for (auto point : event_points)
+    {
+        clusters[point.cluster_id].members.push_back(point);
+        clusters[point.cluster_id].cluster_id = point.cluster_id;
+        
+        auto& cluster = clusters[point.cluster_id];
+        if (cluster.bbox_max_x == -1 || point.x > cluster.bbox_max_x)
+            cluster.bbox_max_x = point.x;
+        if (cluster.bbox_max_y == -1 || point.y > cluster.bbox_max_y)
+            cluster.bbox_max_y = point.y;
+        if (cluster.bbox_min_x == -1 || point.x < cluster.bbox_min_x)
+            cluster.bbox_min_x = point.x;
+        if (cluster.bbox_min_y == -1 || point.y < cluster.bbox_min_y)
+            cluster.bbox_min_y = point.y;
+    }
+
+    for (auto cluster : clusters)
+    {
+        std::cout << cluster.bbox_min_y << "," << cluster.bbox_min_x << "," << cluster.bbox_max_y << "," << cluster.bbox_max_x << std::endl;
     }
 
     file.close();
