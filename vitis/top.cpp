@@ -373,12 +373,13 @@ void add_pixel_to_subcluster(
                 // pixel is in the next column pair, so save it for later
                 if (!fp_in_same_col_pair && !is_first_fp_of_event) 
                 {
+                    first_fp_of_next_col_pair = fp;
+                    fp_in_same_col_pair = false;
+                    have_next_fp_buffered = true;
 #if DEBUG==3
                     std::cout << "buffered the fp, as its from next col-pair" <<
                         std::endl;
 #endif
-                    first_fp_of_next_col_pair = fp;
-                    fp_in_same_col_pair = false;
                 }
                 else // pixel is in the same column pair, so add it to the edge array
                 {
@@ -470,7 +471,6 @@ void add_pixel_to_subcluster(
                 {
                     first_sc_of_next_col_pair = sc;
                     fp_in_same_col_pair = false;
-
                     //send out remaining sc in acc
                 }
                 else // sc is in the same column pair
