@@ -449,6 +449,10 @@ void add_pixel_to_subcluster(
 
                 // do NOT break, as new event would also do that
                 // loops in dataflows can't have two exit conditions
+#if DEBUG==3
+                std::cout << "sc read/sent end marker" <<
+                    std::endl;
+#endif
             }
             else if (sc.is_new_event)
             {
@@ -462,9 +466,20 @@ void add_pixel_to_subcluster(
 
                 // do NOT break, as new event would also do that
                 // loops in dataflows can't have two exit conditions
+
+#if DEBUG==3
+                std::cout << "sc read/sent new event id: " <<
+                    std::hex <<
+                    (unsigned int)(sc.ID) <<
+                    std::endl;
+#endif
             }
             else // is a subcluster
-            {                
+            {        
+#if DEBUG==3
+                std::cout << "sc read a subcluster" <<
+                    std::endl;
+#endif        
                 sc_in_current_col_pair; // TBD
 
                 if (!sc_in_current_col_pair) // pixel is in the next column pair, so save it for later
@@ -530,6 +545,10 @@ void add_pixel_to_subcluster(
             }
         }
     }
+#if DEBUG==3
+    std::cout << "End of Stage 3" <<
+        std::endl;
+#endif
 }
 
 /**
