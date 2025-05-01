@@ -306,10 +306,18 @@ void add_pixel_to_subcluster(
             {
                 fp = first_fp_of_next_col_pair;
                 have_next_fp_buffered = false;
+#if DEBUG==3
+                std::cout << "loaded the buffered fp" <<
+                    std::endl;
+#endif
             }
             else
             {
                 fired_pixel_stream_in >> fp;
+#if DEBUG==3
+                std::cout << "read next fp entry from stream" <<
+                    std::endl;
+#endif
             }
 
             // should move one once the column pair is done
@@ -322,6 +330,10 @@ void add_pixel_to_subcluster(
                 //fp_is_end = true;
                 fp_in_same_col_pair = false;
                 fired_pixel_stream_out << fp;
+#if DEBUG==3
+                std::cout << "fp read/sent end marker" <<
+                    std::endl;
+#endif
             }
             else if (fp.is_new_event)
             {
@@ -331,12 +343,28 @@ void add_pixel_to_subcluster(
                 have_next_fp_buffered = false;
                 fired_pixel_stream_out << fp;
                 is_first_fp_of_event = true;
+#if DEBUG==3
+                std::cout << "fp read/sent new event id: " <<
+                    std::hex <<
+                    (unsigned int)(fp.ID) <<
+                    std::endl;
+#endif
             }
             else // is a fired pixel
             {
                 // get the coordinates of the fired pixel
                 col_idx_t C = fp.coords.col;
                 row_idx_t R = fp.coords.row;
+
+#if DEBUG==3
+                std::cout << "fp: (C: " <<
+                    std::hex <<
+                    (unsigned int)(C) <<
+                    ", R: " <<
+                    (unsigned int)(R) <<
+                    ")" <<
+                    std::endl;
+#endif
 
                 // is this pixel in a different column-pair than the prev pixel?
                 fp_curr_col_pair_idx = (C / 2); 
@@ -345,21 +373,37 @@ void add_pixel_to_subcluster(
                 // pixel is in the next column pair, so save it for later
                 if (!fp_in_same_col_pair && !is_first_fp_of_event) 
                 {
+#if DEBUG==3
+                    std::cout << "buffered the fp, as its from next col-pair" <<
+                        std::endl;
+#endif
                     first_fp_of_next_col_pair = fp;
                     fp_in_same_col_pair = false;
                 }
                 else // pixel is in the same column pair, so add it to the edge array
                 {
+#if DEBUG==3
+                    std::cout << "fp is in curr col-pair" <<
+                        std::endl;
+#endif
                     
                     bool is_left_edge ((C % 2) == 0);
 
                     if (is_left_edge)
                     {
                         adj_left_edge[R] = 1;
+#if DEBUG==3
+                        std::cout << "fp is in left col of pair" <<
+                            std::endl;
+#endif
                     }
                     else
                     {
                         adj_right_edge[R] = 1;
+#if DEBUG==3
+                            std::cout << "fp is in right col of pair" <<
+                            std::endl;
+#endif
                     }
 
                     fp_prev_C = C;
@@ -381,7 +425,7 @@ void add_pixel_to_subcluster(
             // if we had a carry over between column pairs, 
             if (have_next_sc_buffered) 
             {
-                sc = first_sc_of_next_col_pair
+                sc = first_sc_of_next_col_pair;
             }
             else
             {
