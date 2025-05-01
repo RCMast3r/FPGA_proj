@@ -248,13 +248,19 @@ void add_pixel_to_subcluster(
 
     col_idx_t adj_left_edge_C; // no need to store the right col idx, as it is this plus one
     bit_t adj_left_edge[512];
-    bit_t adj_right_edge[512];
+    bit_t adj_right_edge[512]; // not needed for current stitching, but will be used as acc right edge next time
 
     cluster_bounds curr_acc_subclusters[256];
     cluster_bounds next_acc_subclusters[256];
 
     fired_pixel first_fp_of_next_col_pair;
     cluster_bounds first_sc_of_next_col_pair;
+
+    col_idx_t fp_prev_C;
+    row_idx_t fp_prev_R;
+    row_idx_t fp_curr_col_pair_idx;
+    row_idx_t fp_prev_col_pair_idx;
+
 
     fired_pixel fp;
     cluster_bounds sc;
@@ -271,6 +277,11 @@ void add_pixel_to_subcluster(
     bool sc_is_end = false;
     //bool is_end = false;
 
+    bool is_first_fp_of_event = true;
+
+    bool have_next_fp_buffered = false;
+    bool have_next_sc_buffered = false;
+
     while(!sc_is_end)
     {
         #pragma hls pipeline
@@ -280,18 +291,21 @@ void add_pixel_to_subcluster(
         //      acc arrays should use the is_end bit to mark empty scs 
         //      don't reset arrays that should carry over between outer loop iterations
 
-        bool fp_in_current_col_pair = true;
+        bool fp_in_same_col_pair = true;
         bool sc_in_current_col_pair = true;
 
         bool sc_is_new_event = false;
 
+
+
         // void read_next_col_pair()
-        while (fp_in_current_col_pair)
+        while (fp_in_same_col_pair)
         {
-            // if we had a carry over between column pairs, 
-            if (have_next_fp) 
+            // if we had a carry over between column pairs, use that one before 
+            if (have_next_fp_buffered) 
             {
-                fp = first_fp_of_next_col_pair
+                fp = first_fp_of_next_col_pair;
+                have_next_fp_buffered = false;
             }
             else
             {
@@ -306,30 +320,38 @@ void add_pixel_to_subcluster(
             {
                 // a stream end in the first column means we
                 //fp_is_end = true;
-                fp_in_current_col_pair = false;
+                fp_in_same_col_pair = false;
+                fired_pixel_stream_out << fp;
             }
             else if (fp.is_new_event)
             {
                 // no need to set a flag to track this
                 // because the sc stream will be in sync with this one and encounter the event too
-                fp_in_current_col_pair = false;
+                fp_in_same_col_pair = false;
+                have_next_fp_buffered = false;
+                fired_pixel_stream_out << fp;
+                is_first_fp_of_event = true;
             }
             else // is a fired pixel
-            {                
-                //col_idx_t C = fp.coords.col;
+            {
+                // get the coordinates of the fired pixel
+                col_idx_t C = fp.coords.col;
                 row_idx_t R = fp.coords.row;
 
-                row_idx_t curr_col_pair; // TBD
-                fp_in_current_col_pair; // TBD
+                // is this pixel in a different column-pair than the prev pixel?
+                fp_curr_col_pair_idx = (C / 2); 
+                fp_in_same_col_pair = (fp_curr_col_pair_idx == fp_prev_col_pair_idx);
 
-                if (!fp_in_current_col_pair) // pixel is in the next column pair, so save it for later
+                // pixel is in the next column pair, so save it for later
+                if (!fp_in_same_col_pair && !is_first_fp_of_event) 
                 {
                     first_fp_of_next_col_pair = fp;
-                    fp_in_current_col_pair = false;
+                    fp_in_same_col_pair = false;
                 }
                 else // pixel is in the same column pair, so add it to the edge array
                 {
-                    bool is_left_edge; // TBD
+                    
+                    bool is_left_edge ((C % 2) == 0);
 
                     if (is_left_edge)
                     {
@@ -340,18 +362,24 @@ void add_pixel_to_subcluster(
                         adj_right_edge[R] = 1;
                     }
 
-                    // prev_C = C; etc
+                    fp_prev_C = C;
+                    //fp_prev_R = R; // is this needed?
+                    fp_prev_col_pair_idx = fp_curr_col_pair_idx;
+
+                    is_first_fp_of_event = false;
+
+                    fired_pixel_stream_out << fp;
                 }
             }
-
-            fired_pixel_stream_out << fp;
+            // would normally put the fired_pixel_stream_out << fp; here,
+            // but we shouldn't double-write the buffered fp to the out stream
         }
         
         // void stitch_next_subclusters()
         while (sc_in_current_col_pair)
         {
             // if we had a carry over between column pairs, 
-            if (have_next_sc) 
+            if (have_next_sc_buffered) 
             {
                 sc = first_sc_of_next_col_pair
             }
@@ -381,6 +409,7 @@ void add_pixel_to_subcluster(
             {
                 sc_is_new_event = true;
                 sc_in_current_col_pair = false;
+                have_next_sc_buffered = false;
 
                 // send out remaining sc
 
@@ -396,7 +425,7 @@ void add_pixel_to_subcluster(
                 if (!sc_in_current_col_pair) // pixel is in the next column pair, so save it for later
                 {
                     first_sc_of_next_col_pair = sc;
-                    fp_in_current_col_pair = false;
+                    fp_in_same_col_pair = false;
 
                     //send out remaining sc in acc
                 }
@@ -418,7 +447,7 @@ void add_pixel_to_subcluster(
                         do
                         {
                             cluster_bounds acc_sc = curr_acc_subclusters[acc_sc_idx];
-                            acc_send_is_end = acc_sc.is_end;
+                            acc_sc_is_end = acc_sc.is_end;
                             if (!acc_sc_is_end) // we have another subcluster from the acc. region
                             {
                                 
@@ -433,8 +462,6 @@ void add_pixel_to_subcluster(
                     }
                 }
             }
-
-            fired_pixel_stream_out << fp;
         }
 
         // void handle_end_conditions()
