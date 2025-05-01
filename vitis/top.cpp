@@ -256,7 +256,7 @@ void add_pixel_to_subcluster(
     fired_pixel first_fp_of_next_col_pair;
     cluster_bounds first_sc_of_next_col_pair;
 
-    col_idx_t fp_prev_C;
+    //col_idx_t fp_prev_C;
     row_idx_t fp_prev_R;
     row_idx_t fp_curr_col_pair_idx;
     row_idx_t fp_prev_col_pair_idx;
@@ -291,7 +291,7 @@ void add_pixel_to_subcluster(
         //      acc arrays should use the is_end bit to mark empty scs 
         //      don't reset arrays that should carry over between outer loop iterations
 
-        bool fp_in_same_col_pair = true;
+        bool fp_in_curr_col_pair = true;
         bool sc_in_current_col_pair = true;
 
         bool sc_is_new_event = false;
@@ -299,7 +299,7 @@ void add_pixel_to_subcluster(
 
 
         // void read_next_col_pair()
-        while (fp_in_same_col_pair)
+        while (fp_in_curr_col_pair)
         {
             // if we had a carry over between column pairs, use that one before 
             if (have_next_fp_buffered) 
@@ -328,7 +328,7 @@ void add_pixel_to_subcluster(
             {
                 // a stream end in the first column means we
                 //fp_is_end = true;
-                fp_in_same_col_pair = false;
+                fp_in_curr_col_pair = false;
                 fired_pixel_stream_out << fp;
 #if DEBUG==3
                 std::cout << "fp read/sent end marker" <<
@@ -339,7 +339,7 @@ void add_pixel_to_subcluster(
             {
                 // no need to set a flag to track this
                 // because the sc stream will be in sync with this one and encounter the event too
-                fp_in_same_col_pair = false;
+                fp_in_curr_col_pair = false;
                 have_next_fp_buffered = false;
                 fired_pixel_stream_out << fp;
                 is_first_fp_of_event = true;
@@ -368,13 +368,14 @@ void add_pixel_to_subcluster(
 
                 // is this pixel in a different column-pair than the prev pixel?
                 fp_curr_col_pair_idx = (C / 2); 
-                fp_in_same_col_pair = (fp_curr_col_pair_idx == fp_prev_col_pair_idx);
+                fp_in_curr_col_pair = (fp_curr_col_pair_idx == fp_prev_col_pair_idx);
+                fp_prev_col_pair_idx = fp_curr_col_pair_idx;
 
                 // pixel is in the next column pair, so save it for later
-                if (!fp_in_same_col_pair && !is_first_fp_of_event) 
+                if (!fp_in_curr_col_pair && !is_first_fp_of_event) 
                 {
                     first_fp_of_next_col_pair = fp;
-                    fp_in_same_col_pair = false;
+                    fp_in_curr_col_pair = false;
                     have_next_fp_buffered = true;
 #if DEBUG==3
                     std::cout << "buffered the fp, as its from next col-pair" <<
@@ -407,9 +408,8 @@ void add_pixel_to_subcluster(
 #endif
                     }
 
-                    fp_prev_C = C;
+                    //fp_prev_C = C;
                     //fp_prev_R = R; // is this needed?
-                    fp_prev_col_pair_idx = fp_curr_col_pair_idx;
 
                     is_first_fp_of_event = false;
 
@@ -470,7 +470,7 @@ void add_pixel_to_subcluster(
                 if (!sc_in_current_col_pair) // pixel is in the next column pair, so save it for later
                 {
                     first_sc_of_next_col_pair = sc;
-                    fp_in_same_col_pair = false;
+                    fp_in_curr_col_pair = false;
                     //send out remaining sc in acc
                 }
                 else // sc is in the same column pair
