@@ -225,6 +225,31 @@ void add_pixel_to_subcluster(
     return;
 }
 
+
+/**
+ * @brief stitches one boundary into another
+ * 
+ * @param source this struct has its bounds altered
+ * @param addition bounds get stitched into the source
+ */
+void stitch_bounds(cluster_bounds& source, cluster_bounds& addition)
+{
+    col_idx_t L = source.bounds.L;
+    col_idx_t R = source.bounds.R;
+    row_idx_t T = source.bounds.T;
+    row_idx_t B = source.bounds.B;
+
+    col_idx_t aL = addition.bounds.L;
+    col_idx_t aR = addition.bounds.R;
+    row_idx_t aT = addition.bounds.T;
+    row_idx_t aB = addition.bounds.B;
+
+    source.bounds.L = std::min(L, aL);
+    source.bounds.R = std::max(R, aR);
+    source.bounds.T = std::min(T, aT); // potentially can be skipped given our data ordering
+    source.bounds.B = std::max(B, aB);
+}
+
 /**
  * @brief Find final cluster boundaries given a streams of subclusters and pixels
  * 
@@ -318,17 +343,19 @@ void add_pixel_to_subcluster(
             adj_right_edge[i] = zero_bit;
         }
 
+        cluster_bounds empty_marked_subcluster;
+        empty_marked_subcluster.is_end = 1;
+
         // swap in new subclusters
         for (int i = 0; i < 256; i++)
         {
             // prev iter's next clusters are now the curr clusters
-            cluster_bounds empty_marked_subcluster;
-            empty_marked_subcluster.is_end = 1;
             curr_acc_subclusters[i] = (is_first_sc_of_event ? empty_marked_subcluster : next_acc_subclusters[i]);
             next_acc_subclusters[i] = empty_marked_subcluster; // assume pixels are not fired
         }
         place_idx_next_acc = 0;
 
+        cluster_bounds prior_stitched_next_acc_sc = empty_marked_subcluster;
 
 #if DEBUG==3
         std::cout << "------------------------------" <<
@@ -636,21 +663,61 @@ void add_pixel_to_subcluster(
                         std::cout << "sc could be stitched" <<
                             std::endl;
 #endif
-                        // go through all curr sc from the acc region
-                        bool acc_sc_is_end = false;
-                        unsigned int acc_sc_idx = 0;
+                        // 1. Check if sc overlaps with prior saved next_acc sc (buffer this?)
+                        bool sc_accum_into_prior_stitch = false;
+                       
+                        if (place_idx_next_acc > 0) // don't check if there is no prior stitch
+                        {
+                            // get the bounds of the subcluster
+                            col_idx_t pL = prior_stitched_next_acc_sc.bounds.L;
+                            col_idx_t pR = prior_stitched_next_acc_sc.bounds.R;
+                            row_idx_t pT = prior_stitched_next_acc_sc.bounds.T;
+                            row_idx_t pB = prior_stitched_next_acc_sc.bounds.B;
+
+                            // compare bounds to check for overlap on each axis
+                            bool is_LR_overlap = (pR >= L);
+                            bool is_TB_overlap = (pB >= T);
+                            
+                            if (is_TB_overlap && is_LR_overlap) // if they overlap
+                            {
+                                // stitch bounds
+
+                                sc_accum_into_prior_stitch = true;
+
+                                // TBD: add log
+                            }
+                        }
+
+                        // 2. Then, if sc is not in left edge, skip checking for sc with adjacent bounds in curr_acc
 
                         // is it within the adj left edge?
                         bool in_adj_left_edge = ((L % 2) == 0);
 
-                        if (!in_adj_left_edge) { // TBD actually it can if it overlaps prior stitch
-                            // subclusters in the right edge can't get stitched
+                        if (!in_adj_left_edge) // sc can't stitch with anything currently
+                        {
+                            // subclusters in the right edge can't get stitched with sc in acc region
                             // so don't bother trying to stitch it
-    
-                            // add it to the next set of acc subclusters
-                            next_acc_subclusters[place_idx_next_acc] = sc;
-                            place_idx_next_acc += 1;
+
+                            if (!sc_accum_into_prior_stitch)
+                            {
+                                // add it to the next set of acc subclusters
+                                next_acc_subclusters[place_idx_next_acc] = sc;
+                                place_idx_next_acc += 1;
+                            }
+                            // if sc was accumulated into prior stitch, then don't add it to the next acc sc
                         }
+                        else // sc could stitch with acc sc
+                        {
+                            // 3. Check sc in acc for adjacent bounds (early skip chance when next acc sc T > sc.B)
+                            // 4. If adjacent bounds, check the overlapping range for adj pixels in (min R, max R)
+                            //    Add bound if an adj pixel is found, and mark acc sc as stitched (is_new_event)
+
+                            // check whether to add to prior stitch or start a new one
+                        }
+
+                        // go through all curr sc from the acc region
+                        bool acc_sc_is_end = false;
+                        unsigned int acc_sc_idx = 0;
 
                         do
                         {
