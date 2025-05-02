@@ -260,7 +260,27 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
 {
     for (unsigned int i = 0; ((i < 256) || !(subclusters_arr[i].is_end)); i++)
     {
+        if (!(subclusters_arr[i].is_new_event)) // is_new_event is used in these arrays as a marker for stitched scs 
+        {
+            cluster_bounds_stream << subclusters_arr[i];
+#if DEBUG==3
+            col_idx_t L = subclusters_arr[i].bounds.L;
+            col_idx_t R = subclusters_arr[i].bounds.R;
+            row_idx_t T = subclusters_arr[i].bounds.T;
+            row_idx_t B = subclusters_arr[i].bounds.B;
 
+            std::cout << "sent final cb: (L: " <<
+                (unsigned int)L <<
+                ", R: " <<
+                (unsigned int)R <<
+                ", T: " <<
+                (unsigned int)T <<
+                ", B: " <<
+                (unsigned int)B <<
+                ")" <<
+                std::endl;
+#endif
+        }
     }
 }
 
@@ -570,7 +590,9 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                 sc_is_end = true;
                 sc_in_same_col_pair = false;
 
-                // TBD: send out reamining sc
+                // send out reamining sc
+                flush_subclusters(curr_acc_subclusters, cluster_bounds_stream);
+                flush_subclusters(next_acc_subclusters, cluster_bounds_stream); // these wont carry over to next event
 
                 cluster_bounds_stream << sc; // send along end marker
 
@@ -590,7 +612,9 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                 is_first_sc_of_event = true;
                 is_first_col_pair_of_event = true;
 
-                // TBD: send out remaining sc
+                // send out remaining sc
+                flush_subclusters(curr_acc_subclusters, cluster_bounds_stream);
+                flush_subclusters(next_acc_subclusters, cluster_bounds_stream); // these wont carry over to next event
 
                 cluster_bounds_stream << sc; // send along event marker
 #if DEBUG==3
@@ -637,11 +661,13 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                     have_next_sc_buffered = true;
 
 #if DEBUG==3
-                    std::cout << "buffered the sc, as its from next col-pair" <<
+                    std::cout << "buffered the sc, as it's from next col-pair" <<
                         std::endl;
 #endif
 
-                    //TBD: send out remaining sc in acc
+                    // send out remaining sc in acc
+                    flush_subclusters(curr_acc_subclusters, cluster_bounds_stream);
+                    // don't flush next_acc b/c it continues
                 }
                 else // sc is in the same column pair
                 {
