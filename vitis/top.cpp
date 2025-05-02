@@ -1126,7 +1126,10 @@ void consume_remaining_streams(hls::stream<fired_pixel>& fired_pixel_stream_in, 
 
 #define MAX_DEPTH 25
 
-void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int num_lines, cluster clusters[])
+#define MAX_INPUT_LINES 100//15030
+#define MAX_CLUSTERS 100//131072
+
+void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[MAX_INPUT_LINES], unsigned int num_lines, cluster clusters[MAX_CLUSTERS])
 {
     #pragma HLS interface m_axi port = input_file_lines offset = slave bundle = mem1
     //#pragma HLS interface m_axi port = num_lines offset = slave bundle = mem1 // not needed, as not a mem location
