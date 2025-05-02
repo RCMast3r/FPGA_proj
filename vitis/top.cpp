@@ -305,6 +305,25 @@ void add_pixel_to_subcluster(
 
         bool sc_is_new_event = false;
 
+        // swap edges
+        acc_right_edge_C = adj_left_edge_C + 1;
+        for (int i = 0; i < sizeof(acc_right_edge); i++)
+        {
+            // shift edges
+            acc_right_edge[i] = (is_first_sc_of_event ? 0 : adj_right_edge[i]);
+            adj_left_edge[i] = 0; // assume pixels are not fired
+        }
+
+        // swap in new subclusters
+        for (int i = 0; i < sizeof(curr_acc_subclusters); i++)
+        {
+            // prev iter's next clusters are now the curr clusters
+            cluster_bounds empty_marked_subcluster;
+            empty_marked_subcluster.is_end = 1;
+            curr_acc_subclusters[i] = (is_first_sc_of_event ? empty_marked_subcluster : next_acc_subclusters[i]);
+            next_acc_subclusters[i] = empty_marked_subcluster; // assume pixels are not fired
+        }
+
 
 #if DEBUG==3
         std::cout << "------------------------------" <<
@@ -407,6 +426,7 @@ void add_pixel_to_subcluster(
                     if (is_left_edge)
                     {
                         adj_left_edge[R] = 1;
+                        adj_left_edge_C = C;
 #if DEBUG==3
                         std::cout << "fp is in left col of pair" <<
                             std::endl;
@@ -415,6 +435,7 @@ void add_pixel_to_subcluster(
                     else
                     {
                         adj_right_edge[R] = 1;
+                        adj_left_edge_C = (C - 1);
 #if DEBUG==3
                             std::cout << "fp is in right col of pair" <<
                             std::endl;
@@ -432,6 +453,31 @@ void add_pixel_to_subcluster(
             // would normally put the fired_pixel_stream_out << fp; here,
             // but we shouldn't double-write the buffered fp to the out stream
         }
+
+#if DEBUG==3
+        unsigned int num_acc_pixels = 0;
+        unsigned int num_left_pixels = 0;
+        unsigned int num_right_pixels = 0;
+        for (int i = 0; i < sizeof(adj_left_edge); i++)
+        {
+            num_acc_pixels   += acc_right_edge[i];
+            num_left_pixels  += adj_left_edge[i];
+            num_right_pixels += adj_right_edge[i];
+        }
+
+        std::cout << "acc region right edge has " <<
+            num_acc_pixels <<
+            "pixels" <<
+            std::endl <<
+            "adj region left edge has " <<
+            num_left_pixels <<
+            "pixels" <<
+            std::endl <<
+            "adj region right edge has " <<
+            num_right_pixels <<
+            "pixels" <<
+            std::endl;
+#endif
         
 #if DEBUG==3
         std::cout << "------------------------------" <<
