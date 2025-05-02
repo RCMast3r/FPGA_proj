@@ -1,0 +1,253 @@
+Read 26 fired_pixel entries
+------------------------------
+begin next upper while loop, reinit
+------------------------------
+begin next fp while loop
+read next fp entry from stream
+fp: (C: 0, R: 0)
+fp is in curr col-pair
+fp is in left col of pair
+read next fp entry from stream
+fp: (C: 1, R: 0)
+fp is in curr col-pair
+fp is in right col of pair
+read next fp entry from stream
+fp: (C: 1, R: 1)
+fp is in curr col-pair
+fp is in right col of pair
+read next fp entry from stream
+fp: (C: 0, R: 2)
+fp is in curr col-pair
+fp is in left col of pair
+read next fp entry from stream
+fp: (C: 1, R: 3)
+fp is in curr col-pair
+fp is in right col of pair
+read next fp entry from stream
+fp: (C: 1, R: 5)
+fp is in curr col-pair
+fp is in right col of pair
+read next fp entry from stream
+fp: (C: 0, R: 8)
+fp is in curr col-pair
+fp is in left col of pair
+read next fp entry from stream
+fp: (C: 0, R: 9)
+fp is in curr col-pair
+fp is in left col of pair
+read next fp entry from stream
+fp: (C: 1, R: 9)
+fp is in curr col-pair
+fp is in right col of pair
+read next fp entry from stream
+fp: (C: 0, R: b)
+fp is in curr col-pair
+fp is in left col of pair
+read next fp entry from stream
+fp: (C: 3, R: 0)
+buffered the fp, as its from next col-pair
+acc region right edge col idx: 1
+adj region left edge col idx:  0
+acc region right edge has 0 pixels
+adj region left edge has 5 pixels
+adj region right edge has 5 pixels
+------------------------------
+begin next sc while loop
+read next sc entry from stream
+sc: (L: 0, R: 1, T: 0, B: 3)
+sc is in curr col-pair
+sc skips stitch b/c in first col pair of event
+read next sc entry from stream
+sc: (L: 1, R: 1, T: 5, B: 5)
+sc is in curr col-pair
+sc skips stitch b/c in first col pair of event
+read next sc entry from stream
+sc: (L: 0, R: 1, T: 8, B: 9)
+sc is in curr col-pair
+sc skips stitch b/c in first col pair of event
+read next sc entry from stream
+sc: (L: 0, R: 0, T: b, B: b)
+sc is in curr col-pair
+sc skips stitch b/c in first col pair of event
+read next sc entry from stream
+sc: (L: 2, R: 3, T: 0, B: 1)
+buffered the sc, as it's from next col-pair
+------------------------------
+begin next upper while loop, reinit
+------------------------------
+begin next fp while loop
+loaded the buffered fp
+fp: (C: 3, R: 0)
+fp is in curr col-pair
+fp is in right col of pair
+read next fp entry from stream
+fp: (C: 2, R: 1)
+fp is in curr col-pair
+fp is in left col of pair
+read next fp entry from stream
+fp: (C: 2, R: 4)
+fp is in curr col-pair
+fp is in left col of pair
+read next fp entry from stream
+fp: (C: 3, R: 7)
+fp is in curr col-pair
+fp is in right col of pair
+read next fp entry from stream
+fp: (C: 2, R: 7)
+fp is in curr col-pair
+fp is in left col of pair
+read next fp entry from stream
+fp: (C: 3, R: 8)
+fp is in curr col-pair
+fp is in right col of pair
+read next fp entry from stream
+fp: (C: 2, R: b)
+fp is in curr col-pair
+fp is in left col of pair
+read next fp entry from stream
+fp: (C: 6, R: 0)
+buffered the fp, as its from next col-pair
+acc region right edge col idx: 1
+adj region left edge col idx:  2
+acc region right edge has 5 pixels
+adj region left edge has 4 pixels
+adj region right edge has 3 pixels
+------------------------------
+begin next sc while loop
+loaded the buffered sc
+sc: (L: 2, R: 3, T: 0, B: 1)
+sc is in curr col-pair
+sc could be stitched
+sc in left edge, check curr acc sc
+checking against acc sc: (aL: 0, aR: 1, aT: 0, aB: 3)
+acc sc is in the right edge
+acc sc has range overlap with sc: (oT: 0, oB: 1)
+adj_pixels: adj_sc C: 1 w/ (above,equal,below:1,1,0)
+interm. stitch accum to: (sL: 0, sR: 3, sT: 0, sB: 3)
+marked acc sc as stitched
+checking against acc sc: (aL: 1, aR: 1, aT: 5, aB: 5)
+acc sc have gone past sc range, so stop searching
+saved stitch accum to next_acc_sc: (sL: 0, sR: 3, sT: 0, sB: 3)
+read next sc entry from stream
+sc: (L: 2, R: 2, T: 4, B: 4)
+sc is in curr col-pair
+sc could be stitched
+sc did not overlap with prior stitch
+sc in left edge, check curr acc sc
+checking against acc sc: (aL: 0, aR: 1, aT: 0, aB: 3)
+acc sc is in the right edge
+sc bound top corner is adj to acc sc's
+sc top corner pixel is adj to acc sc's
+interm. stitch accum to: (sL: 0, sR: 2, sT: 0, sB: 4)
+marked acc sc as stitched
+checking against acc sc: (aL: 1, aR: 1, aT: 5, aB: 5)
+acc sc is in the right edge
+sc bound bottom corner is adj to acc sc's
+sc bottom corner pixel is adj to acc sc's
+interm. stitch accum to: (sL: 0, sR: 2, sT: 0, sB: 5)
+marked acc sc as stitched
+checking against acc sc: (aL: 0, aR: 1, aT: 8, aB: 9)
+acc sc have gone past sc range, so stop searching
+stitch accum overlapped with prior stitch & accumulated into prior
+saved stitch accum to prior sc in next_acc_sc: (sL: 0, sR: 3, sT: 0, sB: 5)
+read next sc entry from stream
+sc: (L: 2, R: 3, T: 7, B: 8)
+sc is in curr col-pair
+sc could be stitched
+sc did not overlap with prior stitch
+sc in left edge, check curr acc sc
+checking against acc sc: (aL: 0, aR: 1, aT: 0, aB: 3)
+acc sc is in the right edge
+checking against acc sc: (aL: 1, aR: 1, aT: 5, aB: 5)
+acc sc is in the right edge
+checking against acc sc: (aL: 0, aR: 1, aT: 8, aB: 9)
+acc sc is in the right edge
+acc sc has range overlap with sc: (oT: 8, oB: 8)
+checking against acc sc: (aL: 0, aR: 0, aT: b, aB: b)
+acc sc have gone past sc range, so stop searching
+saved stitch accum to next_acc_sc: (sL: 2, sR: 3, sT: 7, sB: 8)
+read next sc entry from stream
+sc: (L: 2, R: 2, T: b, B: b)
+sc is in curr col-pair
+sc could be stitched
+sc did not overlap with prior stitch
+sc in left edge, check curr acc sc
+checking against acc sc: (aL: 0, aR: 1, aT: 0, aB: 3)
+acc sc is in the right edge
+checking against acc sc: (aL: 1, aR: 1, aT: 5, aB: 5)
+acc sc is in the right edge
+checking against acc sc: (aL: 0, aR: 1, aT: 8, aB: 9)
+acc sc is in the right edge
+checking against acc sc: (aL: 0, aR: 0, aT: b, aB: b)
+acc sc is not in the right edge, can't be stitched
+saved stitch accum to next_acc_sc: (sL: 2, sR: 2, sT: b, sB: b)
+read next sc entry from stream
+sc: (L: 6, R: 7, T: 0, B: 1)
+buffered the sc, as it's from next col-pair
+sent final cb: (L: 0, R: 1, T: 8, B: 9)
+sent final cb: (L: 0, R: 0, T: b, B: b)
+------------------------------
+begin next upper while loop, reinit
+------------------------------
+begin next fp while loop
+loaded the buffered fp
+fp: (C: 6, R: 0)
+fp is in curr col-pair
+fp is in left col of pair
+read next fp entry from stream
+fp: (C: 7, R: 0)
+fp is in curr col-pair
+fp is in right col of pair
+read next fp entry from stream
+fp: (C: 7, R: 1)
+fp is in curr col-pair
+fp is in right col of pair
+read next fp entry from stream
+fp: (C: 6, R: 1)
+fp is in curr col-pair
+fp is in left col of pair
+read next fp entry from stream
+fp read/sent new event id: 4
+acc region right edge col idx: 3
+adj region left edge col idx:  6
+acc region right edge has 3 pixels
+adj region left edge has 2 pixels
+adj region right edge has 2 pixels
+------------------------------
+begin next sc while loop
+loaded the buffered sc
+sc: (L: 6, R: 7, T: 0, B: 1)
+sc is in curr col-pair
+sc skips stitch b/c separate adj & acc reg
+read next sc entry from stream
+sent final cb: (L: 0, R: 3, T: 0, B: 5)
+sent final cb: (L: 2, R: 3, T: 7, B: 8)
+sent final cb: (L: 2, R: 2, T: b, B: b)
+sent final cb: (L: 6, R: 7, T: 0, B: 1)
+sc read/sent new event id: 4
+------------------------------
+begin next upper while loop, reinit
+------------------------------
+begin next fp while loop
+read next fp entry from stream
+fp: (C: 6, R: 2)
+fp is in curr col-pair
+fp is in left col of pair
+read next fp entry from stream
+fp read/sent end marker
+acc region right edge col idx: 7
+adj region left edge col idx:  6
+acc region right edge has 0 pixels
+adj region left edge has 1 pixels
+adj region right edge has 0 pixels
+------------------------------
+begin next sc while loop
+read next sc entry from stream
+sc: (L: 6, R: 6, T: 2, B: 2)
+sc is in curr col-pair
+sc skips stitch b/c in first col pair of event
+read next sc entry from stream
+sent final cb: (L: 6, R: 6, T: 2, B: 2)
+sc read/sent end marker
+End of Stage 3
+INFO [HLS SIM]: The maximum depth reached by any hls::stream() instance in the design is 19
