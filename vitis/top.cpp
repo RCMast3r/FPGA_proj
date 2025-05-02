@@ -531,7 +531,7 @@ void add_pixel_to_subcluster(
                 if (!sc_in_same_col_pair && !is_first_sc_of_event) // pixel is in the next column pair, so save it for later
                 {
                     first_sc_of_next_col_pair = sc;
-                    fp_in_same_col_pair = false;
+                    sc_in_same_col_pair = false;
                     have_next_sc_buffered = true;
 
 #if DEBUG==3
@@ -576,6 +576,8 @@ void add_pixel_to_subcluster(
                         }
                         while(!acc_sc_is_end);
                     }
+
+                    is_first_sc_of_event = false;
                 }
             }
         }
