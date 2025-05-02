@@ -7,7 +7,7 @@
 // 3 to debug stage 3
 // 4 to debug stage 4
 // 5 to debug stage 5
-//#define DEBUG 3
+#define DEBUG 5
 
 #include <ap_int.h>
 #include <cstdint>
@@ -212,8 +212,8 @@ struct cluster {
     ap_uint<fired_pixels_per_cluster_bits> num_columns;
     ap_uint<fired_pixels_per_cluster_bits> num_rows;
 
-    ap_fixed<13,3> centre_of_mass_y_cord;
-    ap_fixed<12,3> centre_of_mass_x_cord;
+    ap_uint<13> centre_of_mass_y_cord;
+    ap_uint<12> centre_of_mass_x_cord;
 
     //box_bounds bounds; // bounding box of the cluster
     num_fired_t num_fired; // number of fired pixels in the cluster
