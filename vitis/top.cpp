@@ -682,21 +682,17 @@ void stitch_bounds(cluster_bounds& source, cluster_bounds& addition)
                             {
                                 // stitch bounds
                                 stitch_bounds(prior_sc_from_next_acc, sc);
-                                next_acc_subclusters[place_idx_next_acc] = prior_sc_from_next_acc;
+                                next_acc_subclusters[place_idx_next_acc - 1] = prior_sc_from_next_acc;
 
                                 sc_accum_into_prior_stitch = true;
-
 #if DEBUG==3
-                            std::cout << "sc overlapped with prior stitch & accumulated into prior" <<
-                                std::endl;
+                                std::cout << "sc overlapped with prior stitch & accumulated into prior" <<
+                                    std::endl;
 #endif
                             }
                             else // sc didn't overlap with prior switch
                             {
-                                place_idx_next_acc += 1;
-
                                 sc_accum_into_prior_stitch = false;
-
 #if DEBUG==3
                                 std::cout << "sc did not overlap with prior stitch" <<
                                     std::endl;
@@ -722,9 +718,9 @@ void stitch_bounds(cluster_bounds& source, cluster_bounds& addition)
                             if (!sc_accum_into_prior_stitch)
                             {
                                 // add it to the next set of acc subclusters
-                                place_idx_next_acc += 1; // increment b/c prior sc is finished and can be kept
                                 next_acc_subclusters[place_idx_next_acc] = sc;
-                                prior_sc_from_next_acc = sc; // probably unnecessary, but just in case
+                                place_idx_next_acc += 1;
+                                prior_sc_from_next_acc = sc;
                                 
 #if DEBUG==3
                                 std::cout << "sc not acc. with prior nor in left, so added to next" <<
@@ -743,6 +739,8 @@ void stitch_bounds(cluster_bounds& source, cluster_bounds& addition)
                             // 3. Check sc in acc for adjacent bounds (early skip chance when next acc sc T > sc.B)
 
                             bool early_exit = false;
+
+                            cluster_bounds sc_stitch_accum = sc;
 
                             // go through all curr sc from the acc region
                             for (int i = 0; (!(curr_acc_subclusters[i].is_end) || early_exit || i < 256); i++) // go through curr acc sc with early exit
@@ -799,18 +797,28 @@ void stitch_bounds(cluster_bounds& source, cluster_bounds& addition)
 
                                         if (have_adj_pixels)
                                         {
-                                            // check whether to add to prior stitch or start a new one
-                                            if (sc_accum_into_prior_stitch)
-                                            {
-                                                //
-                                            }
-                                            else
-                                            {
-                                                //
-                                            }
+                                            // stitch bounds and add to previous stitch
+                                            stitch_bounds(sc_stitch_accum, curr_acc_subclusters[i]);  
+
+                                            // mark acc sc as stitched so it doesn't get written to cluster stream
+                                            curr_acc_subclusters[i].is_new_event = 1;
                                         }
                                     }
                                 }
+                            }
+
+                            // check whether to add to prior stitch or start a new one
+                            if (sc_accum_into_prior_stitch)
+                            {
+                                // add to previous stitch
+                                stitch_bounds(prior_sc_from_next_acc, sc_stitch_accum);
+                                next_acc_subclusters[place_idx_next_acc - 1] = prior_sc_from_next_acc;
+                            }
+                            else
+                            {
+                                // stitch it in
+                                next_acc_subclusters[place_idx_next_acc] = sc_stitch_accum;
+                                place_idx_next_acc += 1;
                             }
                         }
                     }
@@ -820,27 +828,27 @@ void stitch_bounds(cluster_bounds& source, cluster_bounds& addition)
             }
         }
 
-        // void handle_end_conditions()
-        if (sc_is_end)
-        {
-            // if the streams are over, no need to reinit or manage arrays
-            // stitch_sc has already written out the remaining sc
-        }
-        else
-        {
-            if (sc_is_new_event) // new event means we may need to reset some local variables
-            {
-                // do we need to do anything
-                // stitch_sc has already written out the remaining sc
-            }
-            else // the next column pair is in the same event, so manage variables as normal
-            {
-                // the adj_right_edge array will become the acc_left_edge, so do a copy
-                // go through the sc arrays, send out sc's that won't be in the acc right edge
-                // b/c they can't be stitched next time
-                // also 
-            }
-        }
+        // // void handle_end_conditions()
+        // if (sc_is_end)
+        // {
+        //     // if the streams are over, no need to reinit or manage arrays
+        //     // stitch_sc has already written out the remaining sc
+        // }
+        // else
+        // {
+        //     if (sc_is_new_event) // new event means we may need to reset some local variables
+        //     {
+        //         // do we need to do anything
+        //         // stitch_sc has already written out the remaining sc
+        //     }
+        //     else // the next column pair is in the same event, so manage variables as normal
+        //     {
+        //         // the adj_right_edge array will become the acc_left_edge, so do a copy
+        //         // go through the sc arrays, send out sc's that won't be in the acc right edge
+        //         // b/c they can't be stitched next time
+        //         // also 
+        //     }
+        // }
     }
 #if DEBUG==3
     std::cout << "End of Stage 3" <<
@@ -920,7 +928,7 @@ void stitch_subclusters_OLD(
             }
             else // is a fired pixel
             {
-                // TBD: If the fired pixel stream gets to a new column-pair ahead of the stitching
+                // T-BD: If the fired pixel stream gets to a new column-pair ahead of the stitching
                 //      Save the fired_pixel b/c we won't have an edge array to add it to yet
                 //      Signal a need to change edges and pause the fired pixel ingest
 
@@ -965,7 +973,7 @@ void stitch_subclusters_OLD(
             }
             else // is a subcluster
             {
-                // TBD
+                // T-BD
             }
         }
 
@@ -977,12 +985,12 @@ void stitch_subclusters_OLD(
             // send off remaining clusters b/c we are in a new event
             // send cluster output stream the new event marker
 
-            // TBD
+            // T-BD
         }
 
         if (fp_end && sc_end)
         {
-            // TBD
+            // T-BD
 
             // send off remaining subclusters b/c there are no more subcluster to stitch
 
