@@ -790,10 +790,27 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                                 row_idx_t aT = curr_acc_subclusters[i].bounds.T;
                                 row_idx_t aB = curr_acc_subclusters[i].bounds.B;
 
+#if DEBUG==3
+                                std::cout << "checking against acc sc: (aL: " <<
+                                    (unsigned int)aL <<
+                                    ", aR: " <<
+                                    (unsigned int)aR <<
+                                    ", aT: " <<
+                                    (unsigned int)aT <<
+                                    ", aB: " <<
+                                    (unsigned int)aB <<
+                                    ")" <<
+                                    std::endl;
+#endif
+
                                 // check if acc sc is too far below (assumes acc sc are ordered, which should be true)
                                 if (aT > B)
                                 {
                                     early_exit = true;
+#if DEBUG==3
+                                    std::cout << "acc sc have gone past sc range, so stop searching" <<
+                                        std::endl;
+#endif
                                 }
                                 else
                                 {
@@ -808,6 +825,15 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                                         // get the overlapping range
                                         row_idx_t oT = std::max(T, aT);
                                         row_idx_t oB = std::min(B, aB);
+
+#if DEBUG==3
+                                        std::cout << "acc sc has range overlap with sc: (oT: " <<
+                                            (unsigned int)oT <<
+                                            ", oB: " <<
+                                            (unsigned int)oB <<
+                                            ")" <<
+                                            std::endl;
+#endif
 
                                         // check edges
                                         //(dont check up/down if outside of overlap range or if outside of array range)
@@ -844,6 +870,7 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                                             curr_acc_subclusters[i].is_new_event = 1;
                                         }
                                     }
+
                                 }
                             }
 
