@@ -952,8 +952,33 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                                 }
                             }
 
+                            bool stitch_accum_into_prior_stitch = false;
+
+                            // check if stitch accmum overlaps the previous stitch
+                            if (place_idx_next_acc > 0)
+                            {
+                                // get the bounds of the prior subcluster
+                                col_idx_t pL = prior_sc_from_next_acc.bounds.L;
+                                col_idx_t pR = prior_sc_from_next_acc.bounds.R;
+                                row_idx_t pT = prior_sc_from_next_acc.bounds.T;
+                                row_idx_t pB = prior_sc_from_next_acc.bounds.B;
+
+                                // compare bounds to check for overlap on each axis
+                                bool is_LR_overlap = (pR >= sc_stitch_accum.bounds.L);
+                                bool is_TB_overlap = (pB >= sc_stitch_accum.bounds.T);
+                                
+                                if (is_TB_overlap && is_LR_overlap) // if they overlap
+                                {
+                                    stitch_accum_into_prior_stitch = true;
+#if DEBUG==3
+                                    std::cout << "stitch accum overlapped with prior stitch & accumulated into prior" <<
+                                        std::endl;
+#endif
+                                }
+                            }
+
                             // check whether to add to prior stitch or start a new one
-                            if (sc_accum_into_prior_stitch)
+                            if (sc_accum_into_prior_stitch || stitch_accum_into_prior_stitch)
                             {
                                 // add to previous stitch
                                 stitch_bounds(prior_sc_from_next_acc, sc_stitch_accum);
