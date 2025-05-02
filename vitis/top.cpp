@@ -1032,7 +1032,7 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
 #endif
 }
 
-#define LOG_13_TEST 1
+#define LOG_13_TEST 0
 
 #if STAGE_1_3_TEST==1
 void consume_remaining_streams(hls::stream<fired_pixel>& fired_pixel_stream_in, hls::stream<cluster_bounds>& cluster_bounds_stream)
