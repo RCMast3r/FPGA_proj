@@ -368,7 +368,7 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
 
         // swap edges
         acc_right_edge_C = adj_left_edge_C + 1;
-        for (int i = 0; i < sizeof(acc_right_edge); i++)
+        for (unsigned int i = 0; i < sizeof(acc_right_edge); i++)
         {
             // shift edges
             bit_t zero_bit = 0; // gets around a ternary type constraint
@@ -381,7 +381,7 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
         empty_marked_subcluster.is_end = 1;
 
         // swap in new subclusters
-        for (int i = 0; i < 256; i++)
+        for (unsigned int i = 0; i < 256; i++)
         {
             // prev iter's next clusters are now the curr clusters
             curr_acc_subclusters[i] = (is_first_sc_of_event ? empty_marked_subcluster : next_acc_subclusters[i]);
@@ -783,7 +783,7 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                             cluster_bounds sc_stitch_accum = sc;
 
                             // go through all curr sc from the acc region
-                            for (int i = 0; ((i < 256) || !(curr_acc_subclusters[i].is_end) || early_exit); i++) // go through curr acc sc with early exit
+                            for (unsigned int i = 0; ((i < 256) || !(curr_acc_subclusters[i].is_end) || early_exit); i++) // go through curr acc sc with early exit
                             {
                                 col_idx_t aL = curr_acc_subclusters[i].bounds.L;
                                 col_idx_t aR = curr_acc_subclusters[i].bounds.R;
@@ -841,7 +841,7 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                                         bool have_adj_pixels = false;
 
                                         // for each pixel in the overlap range of the adj sc
-                                        for (int j = oT; ((j <= oB) || have_adj_pixels); j++)
+                                        for (unsigned int j = oT; ((j <= oB) || have_adj_pixels); j++)
                                         {
                                             if (adj_left_edge[j]) // if adj has a fired pixel there
                                             {
@@ -858,19 +858,48 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                                                     is_acc_below_fired = acc_right_edge[j + 1];
                                                 }
                                                 have_adj_pixels = is_acc_equal_fired || is_acc_above_fired || is_acc_below_fired;
+#if DEBUG==3
+                                                if (have_adj_pixels)
+                                                {
+                                                    std::cout << "adj_pixels: adj_sc C: " <<
+                                                        (unsigned int)j <<
+                                                        " w/ (above,equal,below:" <<
+                                                        (unsigned int)is_acc_above_fired <<
+                                                        "," <<
+                                                        (unsigned int)is_acc_equal_fired <<
+                                                        "," <<
+                                                        (unsigned int)is_acc_below_fired <<
+                                                        ")" <<
+                                                        std::endl;
+                                                }
+#endif
                                             }
                                         }
 
                                         if (have_adj_pixels)
                                         {
                                             // stitch bounds and add to previous stitch
-                                            stitch_bounds(sc_stitch_accum, curr_acc_subclusters[i]);  
+                                            stitch_bounds(sc_stitch_accum, curr_acc_subclusters[i]);
 
                                             // mark acc sc as stitched so it doesn't get written to cluster stream
                                             curr_acc_subclusters[i].is_new_event = 1;
+
+#if DEBUG==3
+                                            std::cout << "interm. stitch accum to: (sL: " <<
+                                                (unsigned int)(sc_stitch_accum.bounds.L) <<
+                                                ", sR: " <<
+                                                (unsigned int)(sc_stitch_accum.bounds.R) <<
+                                                ", sT: " <<
+                                                (unsigned int)(sc_stitch_accum.bounds.T) <<
+                                                ", sB: " <<
+                                                (unsigned int)(sc_stitch_accum.bounds.B) <<
+                                                ")" <<
+                                                std::endl <<
+                                                "marked acc sc as stitched" <<
+                                                std::endl;
+#endif
                                         }
                                     }
-
                                 }
                             }
 
@@ -880,12 +909,38 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                                 // add to previous stitch
                                 stitch_bounds(prior_sc_from_next_acc, sc_stitch_accum);
                                 next_acc_subclusters[place_idx_next_acc - 1] = prior_sc_from_next_acc;
+
+#if DEBUG==3
+                                std::cout << "saved stitch accum to prior sc in next_acc_sc: (sL: " <<
+                                    (unsigned int)(prior_sc_from_next_acc.bounds.L) <<
+                                    ", sR: " <<
+                                    (unsigned int)(prior_sc_from_next_acc.bounds.R) <<
+                                    ", sT: " <<
+                                    (unsigned int)(prior_sc_from_next_acc.bounds.T) <<
+                                    ", sB: " <<
+                                    (unsigned int)(prior_sc_from_next_acc.bounds.B) <<
+                                    ")" <<
+                                    std::endl;
+#endif
                             }
                             else
                             {
                                 // stitch it in
                                 next_acc_subclusters[place_idx_next_acc] = sc_stitch_accum;
                                 place_idx_next_acc += 1;
+
+#if DEBUG==3
+                                std::cout << "saved stitch accum to next_acc_sc: (sL: " <<
+                                    (unsigned int)(sc_stitch_accum.bounds.L) <<
+                                    ", sR: " <<
+                                    (unsigned int)(sc_stitch_accum.bounds.R) <<
+                                    ", sT: " <<
+                                    (unsigned int)(sc_stitch_accum.bounds.T) <<
+                                    ", sB: " <<
+                                    (unsigned int)(sc_stitch_accum.bounds.B) <<
+                                    ")" <<
+                                    std::endl;
+#endif
                             }
                         }
                     }
