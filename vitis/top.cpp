@@ -691,9 +691,9 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                         place_idx_next_acc += 1;
 #if DEBUG==3
                         std::cout << "sc skips stitch b/c " <<
-                            (!adj_touches_acc_region ?
-                                "separate adj & acc reg" :
-                                "in first col pair of event"
+                            (is_first_col_pair_of_event ?
+                                "in first col pair of event" :
+                                "separate adj & acc reg"
                             ) <<
                             std::endl;
 #endif
