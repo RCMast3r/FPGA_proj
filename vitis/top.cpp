@@ -740,33 +740,19 @@ void stitch_bounds(cluster_bounds& source, cluster_bounds& addition)
                             std::cout << "sc in left edge, check curr acc sc" <<
                                 std::endl;
 #endif
-                            
                             // 3. Check sc in acc for adjacent bounds (early skip chance when next acc sc T > sc.B)
+
+                            // go through all curr sc from the acc region
+                            for (int i = 0; (!(curr_acc_subclusters[i].is_end) || i < 256); i++) // go through curr acc sc with early exit
+                            {
+
+                            }
+
                             // 4. If adjacent bounds, check the overlapping range for adj pixels in (min R, max R)
                             //    Add bound if an adj pixel is found, and mark acc sc as stitched (is_new_event)
 
                             // check whether to add to prior stitch or start a new one
                         }
-
-                        // go through all curr sc from the acc region
-                        bool acc_sc_is_end = false;
-                        unsigned int acc_sc_idx = 0;
-
-                        do
-                        {
-                            cluster_bounds acc_sc = curr_acc_subclusters[acc_sc_idx];
-                            acc_sc_is_end = acc_sc.is_end;
-                            if (!acc_sc_is_end) // we have another subcluster from the acc. region
-                            {
-                                
-                            }
-                            acc_sc_idx++;
-                            if (acc_sc_idx >= 256)
-                            {
-                                acc_sc_is_end = true;
-                            }
-                        }
-                        while(!acc_sc_is_end);
                     }
 
                     is_first_sc_of_event = false;
