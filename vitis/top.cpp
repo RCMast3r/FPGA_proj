@@ -469,7 +469,7 @@ void add_pixel_to_subcluster(
 
         std::cout << "acc region right edge has " <<
             num_acc_pixels <<
-            "pixels" <<
+            " pixels" <<
             std::endl <<
             "adj region left edge has " <<
             num_left_pixels <<
