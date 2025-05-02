@@ -258,7 +258,7 @@ void stitch_bounds(cluster_bounds& source, cluster_bounds& addition)
  */
 void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bounds>& cluster_bounds_stream)
 {
-    for (unsigned int i = 0; ((i < 256) || !(subclusters_arr[i].is_end)); i++)
+    for (unsigned int i = 0; ((i < 256) && !(subclusters_arr[i].is_end)); i++)
     {
         if (!(subclusters_arr[i].is_new_event)) // is_new_event is used in these arrays as a marker for stitched scs 
         {
@@ -783,7 +783,7 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                             cluster_bounds sc_stitch_accum = sc;
 
                             // go through all curr sc from the acc region
-                            for (unsigned int i = 0; ((i < 256) || !(curr_acc_subclusters[i].is_end) || early_exit); i++) // go through curr acc sc with early exit
+                            for (unsigned int i = 0; ((i < 256) && !(curr_acc_subclusters[i].is_end) && !early_exit); i++) // go through curr acc sc with early exit
                             {
                                 col_idx_t aL = curr_acc_subclusters[i].bounds.L;
                                 col_idx_t aR = curr_acc_subclusters[i].bounds.R;
