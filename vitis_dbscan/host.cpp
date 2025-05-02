@@ -52,8 +52,10 @@ int main(int argc, char *argv[])
     // Read and process each line
 
     // std::vector<Point> event_points;
-    Point event_points[MAX_NUM_POINTS];
-    size_t event_points_idx;
+    // Point event_points[MAX_NUM_POINTS];
+    int points_x[MAX_NUM_POINTS];
+    int points_y[MAX_NUM_POINTS];
+    size_t event_points_idx = 0;
     while (std::getline(file, line))
     {
         ++line_num;
@@ -61,15 +63,19 @@ int main(int argc, char *argv[])
         if (std::regex_match(line, match, pattern))
         {
             // std::cout << "Line " << line_num << ": " << hexStringToInt(match[1]) <<" "<< hexStringToInt(match[2]) << std::endl;
-            Point p = {(double)hexStringToInt(match[2]), (double)hexStringToInt(match[1])};
-            event_points[event_points_idx] = p;
-            event_points_idx++;
+            // Point p;
+            // p.x = (double)hexStringToInt(match[2]);
+            // p.y = (double)hexStringToInt(match[1]);
+            points_x[event_points_idx]= hexStringToInt(match[2]);
+            points_y[event_points_idx]= hexStringToInt(match[1]);
+            // event_points[event_points_idx] = p;
+            // event_points_idx++;
             // event_points.push_back(p);
         }
     }
     cluster clusters[MAX_CLUSTERS];
-    auto max_id = dbscan_algo_fixed_mem(event_points, 1, 1, (event_points_idx+1), clusters);
-    std::cout << max_id << std::endl;
+    dbscan_algo_fixed_mem(points_x, points_y, (float)1, (float)1, (int)(event_points_idx+1));
+    // std::cout << max_id << std::endl;
 
     // std::vector<cluster> clusters;
     // clusters.resize(max_id);

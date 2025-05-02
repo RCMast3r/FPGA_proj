@@ -1,7 +1,7 @@
 open_project project_1
 
 # set top function of the HLS design
-set_top compute_attention_HLS
+set_top dbscan_algo_fixed_mem
 
 # add source file
 add_files top.cpp
@@ -10,7 +10,7 @@ add_files top.cpp
 add_files -tb host.cpp
 
 # add data file
-add_files -tb ../data/tb_output_chip0.txt
+add_files -tb tb_output_chip_0.txt
 
 open_solution "solution1"
 

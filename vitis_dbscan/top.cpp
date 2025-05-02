@@ -1,6 +1,5 @@
 #include "types.hpp"
 #include <cmath>
-#include <iostream>
 
 double distance(const Point &a, const Point &b)
 {
@@ -95,10 +94,25 @@ void expand_cluster_no_dyn(Point points[], int idx, int clusterID, double eps, i
     }
 }
 
-void dbscan_algo_fixed_mem(Point points[], double eps, double min_points, size_t num_points_to_cluster, cluster clusters_out[])
+// void dbscan_algo_fixed_mem(Point points[], float eps, float min_points, int num_points_to_cluster, cluster clusters_out[])
+void dbscan_algo_fixed_mem(int points_x[MAX_NUM_POINTS],int points_y[MAX_NUM_POINTS], float eps, float min_points, int num_points_to_cluster)
 {
     int cluster_id = 0;
     // cluster clusters[MAX_CLUSTERS];
+    #pragma HLS interface m_axi port=points_x offset=slave bundle=points_x
+    #pragma HLS interface m_axi port=points_y offset=slave bundle=points_y
+    // #pragma HLS interface m_axi port=eps offset=slave bundle=eps
+    // #pragma HLS interface m_axi port=min_points offset=slave bundle=min_points
+    // #pragma HLS interface m_axi port=num_points_to_cluster offset=slave bundle=num_points_to_cluster
+    // #pragma HLS interface m_axi port=clusters_out =slave bundle=clusters_out
+    #pragma HLS interface s_axilite port=return
+    Point points[MAX_NUM_POINTS];
+    cluster clusters_out[MAX_CLUSTERS];
+    for(int i=0; i<MAX_NUM_POINTS; i++)
+    {
+        points[i].x=points_x[i];
+        points[i].y=points_y[i];
+    }
 
     for(int i=0; i<num_points_to_cluster; i++)
     {
