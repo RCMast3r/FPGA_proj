@@ -310,8 +310,9 @@ void add_pixel_to_subcluster(
         for (int i = 0; i < sizeof(acc_right_edge); i++)
         {
             // shift edges
-            acc_right_edge[i] = (is_first_sc_of_event ? 0 : adj_right_edge[i]);
-            adj_left_edge[i] = 0; // assume pixels are not fired
+            bit_t zero_bit = 0; // gets around a ternary type constraint
+            acc_right_edge[i] = (is_first_sc_of_event ? zero_bit : adj_right_edge[i]);
+            adj_left_edge[i] = zero_bit; // assume pixels are not fired
         }
 
         // swap in new subclusters
