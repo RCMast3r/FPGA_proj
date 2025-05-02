@@ -1181,7 +1181,7 @@ void stitch_subclusters_OLD(
 void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int num_lines, cluster clusters[])
 {
     #pragma HLS interface m_axi port = input_file_lines offset = slave bundle = mem1
-    #pragma HLS interface m_axi port = num_lines offset = slave bundle = mem1
+    //#pragma HLS interface m_axi port = num_lines offset = slave bundle = mem1 // not needed, as not a mem location
     #pragma HLS interface m_axi port = clusters offset = slave bundle = mem2
     #pragma HLS interface s_axilite port = return
 
