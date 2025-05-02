@@ -7,7 +7,7 @@
 // 3 to debug stage 3
 // 4 to debug stage 4
 // 5 to debug stage 5
-#define DEBUG 3
+#define DEBUG 2
 
 #define STAGE_1_3_TEST 1
 
