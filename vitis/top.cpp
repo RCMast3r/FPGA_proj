@@ -86,7 +86,7 @@ void log_sent_sc(cluster_bounds sc)
     }
     else if (sc.is_new_event)
     {
-        std::cout << "sent event ID: " <<
+        std::cout  <<
             std::hex <<
             (unsigned int)(sc.ID) <<
             std::endl;
@@ -107,6 +107,54 @@ void log_sent_sc(cluster_bounds sc)
     }
 }
 #endif
+
+#if DEBUG>=4
+void log_sent_output_cluster(cluster output_cluster)
+{
+    if (output_cluster.is_end)
+    {
+        std::cout << "sent end marker" << std::endl;
+    }
+    else //if (sc.is_new_event)
+   {
+        std::cout  << std::endl;
+            // std::hex <<
+            // (unsigned int)(output_cluster.ID) <<
+            
+   // }
+  //  else
+   // {
+        std::cout << "num_columns " <<
+            std::hex <<
+            (unsigned int)(output_cluster.num_columns) <<
+            ", num_rows: " <<
+            (unsigned int)(output_cluster.num_rows) <<
+	    ", num_fired: " <<
+	    (unsigned int)(output_cluster.num_fired) <<
+            ")" <<
+            std::endl;
+
+	std::cout<<", com_y: " <<
+            (int)(output_cluster.centre_of_mass_y_cord) <<
+            ", com_x: " <<
+            (int)(output_cluster.centre_of_mass_x_cord) <<
+	    std::endl;
+
+	    for(int j=0;j<256;j++)
+            {
+		if(j>=(output_cluster.num_rows *output_cluster.num_columns))
+			{
+                std::cout <<"-1";
+				break;
+			}
+            	std::cout << static_cast<int>( output_cluster.key[j] );
+	    }
+	    //std::cout<< std::endl;
+    }
+}
+#endif
+
+
 
 /**
  * @brief This functions reads fired pixels and finds clusters within column pairs
@@ -351,8 +399,7 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
 
     while(!sc_is_end)
     {
-       //
-        #pragma hls pipeline
+       //#pragma hls pipeline
 #if DEBUG==3
         std::cout << "------------------------------" <<
             std::endl <<
@@ -1239,6 +1286,7 @@ void analyze_clusters(
 
         else if(final_cluster.is_new_event)
         {
+            std::cout<<"\n New Event";
             present_cluster_id = final_cluster.ID;
             sum_r=0;
             sum_c=0;
@@ -1250,15 +1298,25 @@ void analyze_clusters(
 
         else
         {
+
             cluster output_cluster;
             output_cluster.num_fired =0;
-	    sum_r =0;
-	    sum_c =0;
+	        sum_r =0;
+	        sum_c =0;
+            for(int i=0;i<256;i++)
+            {
+                key[i]=0;
+            }
 
 
 
             output_cluster.num_columns = final_cluster.bounds.R - final_cluster.bounds.L +1;
             output_cluster.num_rows = final_cluster.bounds.B - final_cluster.bounds.T +1;
+
+            // std::cout<<"\n final cluster R ="<<final_cluster.bounds.R;
+            // std::cout<<"\n final cluster L ="<<final_cluster.bounds.L;
+            // std::cout<<"\n final cluster T ="<<final_cluster.bounds.T;
+            // std::cout<<"\n final cluster B ="<<final_cluster.bounds.B;
             
 
             //fired_pixel fp;
@@ -1289,12 +1347,27 @@ void analyze_clusters(
 
             else if(have_to_process)
             {
+                // for(int j=0;j<256;j++)
+                // {
+		        //     if(j>=(output_cluster.num_rows *output_cluster.num_columns))
+			    //         {
+                //             //std::cout <<"-1";
+				//             break;
+			    //         }
+            	//     std::cout << static_cast<int>( output_cluster.key[j] );
+	            // }
                 if(fp_array[idx].coords.col <= final_cluster.bounds.R && fp_array[idx].coords.col>= final_cluster.bounds.L && fp_array[idx].coords.row <= final_cluster.bounds.B && fp_array[idx].coords.row >=  final_cluster.bounds.T )
                 {
                     output_cluster.num_fired++;
+                    // std::cout<<"\nfp_array col"<<fp_array[idx].coords.col;
+                    // std::cout<<"\n fp_array row"<<fp_array[idx].coords.row;
+                    
 
                     rr = fp_array[idx].coords.row - final_cluster.bounds.T;
                     cc = fp_array[idx].coords.col - final_cluster.bounds.L;
+
+                    // std::cout<<"\n rr= "<<rr;
+                    // std::cout<<"\n cc= "<<cc;
 
                     key[rr*output_cluster.num_columns +cc] = 1;
 
@@ -1317,8 +1390,8 @@ void analyze_clusters(
                    }
 		output_cluster.key[j] = key[j];
 	    }
-            output_cluster.centre_of_mass_x_cord = (ap_fixed<12,3>) sum_r/output_cluster.num_fired;
-            output_cluster.centre_of_mass_y_cord = (ap_fixed<13,3>) sum_c/output_cluster.num_fired;
+            output_cluster.centre_of_mass_x_cord = ( sum_r)/output_cluster.num_fired;
+            output_cluster.centre_of_mass_y_cord = ( sum_c)/output_cluster.num_fired;
 
             cluster_stream << output_cluster;
 #if DEBUG>=4
@@ -1327,6 +1400,11 @@ void analyze_clusters(
         }
     }
 }
+
+#define MAX_DEPTH 11590
+
+#define MAX_INPUT_LINES 12259//15030
+#define MAX_CLUSTERS 10000//131072
 
 void write_clusters(
     hls::stream<cluster> &cluster_stream,
@@ -1357,22 +1435,29 @@ void write_clusters(
     }
 }
 
-void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int num_lines, cluster clusters[],int max_cluster)
+
+
+
+void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[MAX_INPUT_LINES], unsigned int num_lines, cluster clusters[MAX_CLUSTERS],int max_cluster)
 {
     //#pragma hls interface …
 
     // hls::stream<fired_pixel> fired_pixel_stream_A, fired_pixel_stream_B, fired_pixel_stream_C;
     // hls::stream<cluster_bounds> subcluster_stream, cluster_bounds_stream;
     // hls::stream<cluster> cluster_stream;
+    // #pragma HLS interface m_axi port = input_file_lines offset = slave bundle = mem1
+    // //#pragma HLS interface m_axi port = num_lines offset = slave bundle = mem1 // not needed, as not a mem location
+    // #pragma HLS interface m_axi port = clusters offset = slave bundle = mem2
+    // #pragma HLS interface s_axilite port = return
 
-    hls::stream<fired_pixel,     30> fired_pixel_stream_A;
-    hls::stream<fired_pixel,     30> fired_pixel_stream_B;
-    hls::stream<fired_pixel,     30> fired_pixel_stream_C;
+    hls::stream<fired_pixel,     11590> fired_pixel_stream_A;
+    hls::stream<fired_pixel,     11590> fired_pixel_stream_B;
+    hls::stream<fired_pixel,     11590> fired_pixel_stream_C;
 
-    hls::stream<cluster_bounds,   30> subcluster_stream;
-    hls::stream<cluster_bounds,   30> cluster_bounds_stream;
+    hls::stream<cluster_bounds,   11590> subcluster_stream;
+    hls::stream<cluster_bounds,   11590> cluster_bounds_stream;
 
-    hls::stream<cluster,          30> cluster_stream;
+    hls::stream<cluster,          11590> cluster_stream;
 
     NUM_LINES_GLOBAL = num_lines;
    // #pragma hls dataflow
