@@ -1002,6 +1002,7 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                                 // stitch it in
                                 next_acc_subclusters[place_idx_next_acc] = sc_stitch_accum;
                                 place_idx_next_acc += 1;
+                                prior_sc_from_next_acc = sc_stitch_accum;
 
 #if DEBUG==3
                                 std::cout << "saved stitch accum to next_acc_sc: (sL: " <<
