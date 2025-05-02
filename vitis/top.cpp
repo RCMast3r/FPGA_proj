@@ -1124,7 +1124,7 @@ void consume_remaining_streams(hls::stream<fired_pixel>& fired_pixel_stream_in, 
 }
 #endif
 
-#define MAX_DEPTH 100
+#define MAX_DEPTH 1000
 
 #define MAX_INPUT_LINES 15030
 #define MAX_CLUSTERS 131072
