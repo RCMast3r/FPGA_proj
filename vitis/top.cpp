@@ -288,6 +288,12 @@ void add_pixel_to_subcluster(
     while(!sc_is_end)
     {
         #pragma hls pipeline
+#if DEBUG==3
+        std::cout << "------------------------------" <<
+            std::endl <<
+            "begin next upper while loop, reinit" <<
+            std::endl;
+#endif
 
         // void reinit_local_variables()
         // for each in array -> set to zero
@@ -481,7 +487,7 @@ void add_pixel_to_subcluster(
                 sc_is_new_event = true;
                 sc_in_same_col_pair = false;
                 have_next_sc_buffered = false;
-                is_first_sc_of_event = false;
+                is_first_sc_of_event = true;
 
                 // TBD: send out remaining sc
 
@@ -518,16 +524,29 @@ void add_pixel_to_subcluster(
                     std::endl;
 #endif        
                 
-                sc_in_same_col_pair; // TBD
+                sc_curr_col_pair_idx = (R / 2);
+                sc_in_same_col_pair = (sc_curr_col_pair_idx == sc_prev_col_pair_idx);
+                sc_prev_col_pair_idx = sc_curr_col_pair_idx;
 
-                if (!sc_in_same_col_pair) // pixel is in the next column pair, so save it for later
+                if (!sc_in_same_col_pair && !is_first_sc_of_event) // pixel is in the next column pair, so save it for later
                 {
                     first_sc_of_next_col_pair = sc;
                     fp_in_same_col_pair = false;
-                    //send out remaining sc in acc
+                    have_next_sc_buffered = true;
+
+#if DEBUG==3
+                    std::cout << "buffered the sc, as its from next col-pair" <<
+                        std::endl;
+#endif
+
+                    //TBD: send out remaining sc in acc
                 }
                 else // sc is in the same column pair
                 {
+#if DEBUG==3
+                    std::cout << "sc is in curr col-pair" <<
+                        std::endl;
+#endif
                     // is it within the adj left edge?
                     bool in_left_edge; //TBD
                     if (!in_left_edge) {
