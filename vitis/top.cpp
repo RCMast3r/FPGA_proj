@@ -313,6 +313,7 @@ void add_pixel_to_subcluster(
             bit_t zero_bit = 0; // gets around a ternary type constraint
             acc_right_edge[i] = (is_first_sc_of_event ? zero_bit : adj_right_edge[i]);
             adj_left_edge[i] = zero_bit; // assume pixels are not fired
+            adj_right_edge[i] = zero_bit;
         }
 
         // swap in new subclusters
@@ -472,11 +473,11 @@ void add_pixel_to_subcluster(
             std::endl <<
             "adj region left edge has " <<
             num_left_pixels <<
-            "pixels" <<
+            " pixels" <<
             std::endl <<
             "adj region right edge has " <<
             num_right_pixels <<
-            "pixels" <<
+            " pixels" <<
             std::endl;
 #endif
         
