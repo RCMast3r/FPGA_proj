@@ -1124,7 +1124,7 @@ void consume_remaining_streams(hls::stream<fired_pixel>& fired_pixel_stream_in, 
 }
 #endif
 
-#define MAX_DEPTH 25
+#define MAX_DEPTH 100
 
 #define MAX_INPUT_LINES 15030
 #define MAX_CLUSTERS 131072
@@ -1136,8 +1136,8 @@ void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[MAX_INPUT_LINES], 
     #pragma HLS interface m_axi port = clusters offset = slave bundle = mem2
     #pragma HLS interface s_axilite port = return
 
-    hls::stream<fired_pixel> fired_pixel_stream_A, fired_pixel_stream_B, fired_pixel_stream_C;
-    hls::stream<cluster_bounds> subcluster_stream, cluster_bounds_stream;
+    hls::stream<fired_pixel, MAX_DEPTH> fired_pixel_stream_A, fired_pixel_stream_B, fired_pixel_stream_C;
+    hls::stream<cluster_bounds, MAX_DEPTH> subcluster_stream, cluster_bounds_stream;
 #if DEBUG >= 4
     hls::stream<cluster, MAX_DEPTH> cluster_stream;
 #endif
