@@ -1180,7 +1180,10 @@ void stitch_subclusters_OLD(
 
 void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int num_lines, cluster clusters[])
 {
-    //#pragma hls interface …
+    #pragma HLS interface m_axi port = input_file_lines offset = slave bundle = mem1
+    #pragma HLS interface m_axi port = num_lines offset = slave bundle = mem1
+    #pragma HLS interface m_axi port = clusters offset = slave bundle = mem2
+    #pragma HLS interface s_axilite port = return
 
     hls::stream<fired_pixel> fired_pixel_stream_A, fired_pixel_stream_B, fired_pixel_stream_C;
     hls::stream<cluster_bounds> subcluster_stream, cluster_bounds_stream;
