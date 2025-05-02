@@ -621,9 +621,21 @@ void add_pixel_to_subcluster(
                         // add it to the next set of acc subclusters
                         next_acc_subclusters[place_idx_next_acc] = sc;
                         place_idx_next_acc += 1;
+#if DEBUG==3
+                        std::cout << "sc skips stitch b/c " <<
+                            (!adj_touches_acc_region ?
+                                "separate adj & acc reg" :
+                                "in first col pair of event"
+                            ) <<
+                            std::endl;
+#endif
                     }
                     else // it is possible the sc could be stitched
                     {
+#if DEBUG==3
+                        std::cout << "sc could be stitched" <<
+                            std::endl;
+#endif
                         // go through all curr sc from the acc region
                         bool acc_sc_is_end = false;
                         unsigned int acc_sc_idx = 0;
