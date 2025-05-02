@@ -355,7 +355,8 @@ void stitch_bounds(cluster_bounds& source, cluster_bounds& addition)
         }
         place_idx_next_acc = 0;
 
-        cluster_bounds prior_stitched_next_acc_sc = empty_marked_subcluster;
+        cluster_bounds prior_sc_from_next_acc = empty_marked_subcluster;
+        bool sc_accum_into_prior_stitch = false;
 
 #if DEBUG==3
         std::cout << "------------------------------" <<
@@ -664,15 +665,14 @@ void stitch_bounds(cluster_bounds& source, cluster_bounds& addition)
                             std::endl;
 #endif
                         // 1. Check if sc overlaps with prior saved next_acc sc (buffer this?)
-                        bool sc_accum_into_prior_stitch = false;
-                       
+
                         if (place_idx_next_acc > 0) // don't check if there is no prior stitch
                         {
                             // get the bounds of the subcluster
-                            col_idx_t pL = prior_stitched_next_acc_sc.bounds.L;
-                            col_idx_t pR = prior_stitched_next_acc_sc.bounds.R;
-                            row_idx_t pT = prior_stitched_next_acc_sc.bounds.T;
-                            row_idx_t pB = prior_stitched_next_acc_sc.bounds.B;
+                            col_idx_t pL = prior_sc_from_next_acc.bounds.L;
+                            col_idx_t pR = prior_sc_from_next_acc.bounds.R;
+                            row_idx_t pT = prior_sc_from_next_acc.bounds.T;
+                            row_idx_t pB = prior_sc_from_next_acc.bounds.B;
 
                             // compare bounds to check for overlap on each axis
                             bool is_LR_overlap = (pR >= L);
@@ -681,10 +681,26 @@ void stitch_bounds(cluster_bounds& source, cluster_bounds& addition)
                             if (is_TB_overlap && is_LR_overlap) // if they overlap
                             {
                                 // stitch bounds
+                                stitch_bounds(prior_sc_from_next_acc, sc);
+                                next_acc_subclusters[place_idx_next_acc] = prior_sc_from_next_acc;
 
                                 sc_accum_into_prior_stitch = true;
 
-                                // TBD: add log
+#if DEBUG==3
+                            std::cout << "sc overlapped with prior stitch & accumulated into prior" <<
+                                std::endl;
+#endif
+                            }
+                            else // sc didn't overlap with prior switch
+                            {
+                                place_idx_next_acc += 1;
+
+                                sc_accum_into_prior_stitch = false;
+
+#if DEBUG==3
+                                std::cout << "sc did not overlap with prior stitch" <<
+                                    std::endl;
+#endif
                             }
                         }
 
@@ -695,19 +711,36 @@ void stitch_bounds(cluster_bounds& source, cluster_bounds& addition)
 
                         if (!in_adj_left_edge) // sc can't stitch with anything currently
                         {
+#if DEBUG==3
+                            std::cout << "sc is not in the left edge" <<
+                                std::endl;
+#endif
+
                             // subclusters in the right edge can't get stitched with sc in acc region
                             // so don't bother trying to stitch it
 
                             if (!sc_accum_into_prior_stitch)
                             {
                                 // add it to the next set of acc subclusters
+                                place_idx_next_acc += 1; // increment b/c prior sc is finished and can be kept
                                 next_acc_subclusters[place_idx_next_acc] = sc;
-                                place_idx_next_acc += 1;
+                                prior_sc_from_next_acc = sc; // probably unnecessary, but just in case
+                                
+#if DEBUG==3
+                                std::cout << "sc not acc. with prior nor in left, so added to next" <<
+                                    std::endl;
+#endif
+
                             }
                             // if sc was accumulated into prior stitch, then don't add it to the next acc sc
                         }
                         else // sc could stitch with acc sc
                         {
+#if DEBUG==3
+                            std::cout << "sc in left edge, check curr acc sc" <<
+                                std::endl;
+#endif
+                            
                             // 3. Check sc in acc for adjacent bounds (early skip chance when next acc sc T > sc.B)
                             // 4. If adjacent bounds, check the overlapping range for adj pixels in (min R, max R)
                             //    Add bound if an adj pixel is found, and mark acc sc as stitched (is_new_event)
