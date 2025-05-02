@@ -1035,7 +1035,34 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
 #if STAGE_1_3_TEST==1
 void consume_remaining_streams(hls::stream<fired_pixel>& fired_pixel_stream_in, hls::stream<cluster_bounds>& cluster_bounds_stream)
 {
-    
+    fired_pixel fp;
+    cluster_bounds cb;
+
+    // read out the first event markers
+    fired_pixel_stream_in >> fp;
+    cluster_bounds_stream >> cb;
+
+    bool cb_is_end = false;
+    while (!cb_is_end) {
+        bool fp_in_same_event = true;
+        bool cb_in_same_event = true;
+
+        while (fp_in_same_event) {
+            fired_pixel_stream_in >> fp;
+
+            if (fp.is_new_event || fp.is_end) {
+                fp_in_same_event = false;
+            }
+        }
+        while (cb_in_same_event) {
+            cluster_bounds_stream >> cb;
+
+            if (cb.is_new_event || cb.is_end) {
+                fp_in_same_event = false;
+            }
+            cb_is_end = (cb.is_end == 1);
+        }
+    }
 }
 #endif
 
