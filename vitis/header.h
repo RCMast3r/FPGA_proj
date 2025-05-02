@@ -76,15 +76,13 @@ struct fired_pixel {
 
     // copy assignment operator
     fired_pixel& operator=(const fired_pixel& other) {
-        if (this != &other) {  // protect against self-assignment
-            is_end = other.is_end;
-            is_new_event = other.is_new_event;
+        is_end = other.is_end;
+        is_new_event = other.is_new_event;
 
-            if (is_new_event == 0) {
-                coords = other.coords;
-            } else {
-                ID = other.ID;
-            }
+        if (is_new_event == 0) {
+            coords = other.coords;
+        } else {
+            ID = other.ID;
         }
         return *this;
     }
@@ -145,15 +143,13 @@ struct cluster_bounds {
 
     // copy assignment operator
     cluster_bounds& operator=(const cluster_bounds& other) {
-        if (this != &other) {  // protect against self-assignment
-            is_end = other.is_end;
-            is_new_event = other.is_new_event;
+        is_end = other.is_end;
+        is_new_event = other.is_new_event;
 
-            if (is_new_event == 0) {
-                bounds = other.bounds;
-            } else {
-                ID = other.ID;
-            }
+        if (is_new_event == 0) {
+            bounds = other.bounds;
+        } else {
+            ID = other.ID;
         }
         return *this;
     }

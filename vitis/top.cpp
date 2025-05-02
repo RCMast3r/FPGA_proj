@@ -348,7 +348,8 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
 
     while(!sc_is_end)
     {
-        #pragma hls pipeline
+        //#pragma hls pipeline // don't do, else it tries to unroll
+        // potential future fix: convert the three stages to functions and prevent them from inlining
 #if DEBUG==3
         std::cout << "------------------------------" <<
             std::endl <<
