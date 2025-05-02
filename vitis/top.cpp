@@ -252,6 +252,7 @@ void add_pixel_to_subcluster(
 
     cluster_bounds curr_acc_subclusters[256];
     cluster_bounds next_acc_subclusters[256];
+    ap_uint<8> place_idx_next_acc;
 
     fired_pixel first_fp_of_next_col_pair;
     cluster_bounds first_sc_of_next_col_pair;
@@ -281,6 +282,7 @@ void add_pixel_to_subcluster(
 
     bool is_first_fp_of_event = true;
     bool is_first_sc_of_event = true;
+    bool is_first_col_pair_of_event = true;
 
     bool have_next_fp_buffered = false;
     bool have_next_sc_buffered = false;
@@ -325,6 +327,7 @@ void add_pixel_to_subcluster(
             curr_acc_subclusters[i] = (is_first_sc_of_event ? empty_marked_subcluster : next_acc_subclusters[i]);
             next_acc_subclusters[i] = empty_marked_subcluster; // assume pixels are not fired
         }
+        place_idx_next_acc = 0;
 
 
 #if DEBUG==3
@@ -423,7 +426,7 @@ void add_pixel_to_subcluster(
                         std::endl;
 #endif
                     
-                    bool is_left_edge ((C % 2) == 0);
+                    bool is_left_edge = ((C % 2) == 0);
 
                     if (is_left_edge)
                     {
@@ -543,6 +546,7 @@ void add_pixel_to_subcluster(
                 sc_in_same_col_pair = false;
                 have_next_sc_buffered = false;
                 is_first_sc_of_event = true;
+                is_first_col_pair_of_event = true;
 
                 // TBD: send out remaining sc
 
@@ -587,6 +591,7 @@ void add_pixel_to_subcluster(
                 {
                     first_sc_of_next_col_pair = sc;
                     sc_in_same_col_pair = false;
+                    is_first_col_pair_of_event = false;
                     have_next_sc_buffered = true;
 
 #if DEBUG==3
@@ -602,19 +607,39 @@ void add_pixel_to_subcluster(
                     std::cout << "sc is in curr col-pair" <<
                         std::endl;
 #endif
-                    // is it within the adj left edge?
-                    bool in_left_edge; //TBD
-                    if (!in_left_edge) {
-                        // subclusters in the right edge can't get stitched
-                        // so don't bother trying to stitch it
+
+
+                    bool adj_touches_acc_region = ((adj_left_edge_C - acc_right_edge_C) == 1);
+
+                    if (!adj_touches_acc_region || is_first_col_pair_of_event) 
+                    {
+
+                        // subclusters wont stitch if adj is separated from acc region
+                        // or if they are in the first col pair of an event
+                        // b/c there is no prior acc region to stitch to
 
                         // add it to the next set of acc subclusters
+                        next_acc_subclusters[place_idx_next_acc] = sc;
+                        place_idx_next_acc += 1;
                     }
                     else // it is possible the sc could be stitched
                     {
                         // go through all curr sc from the acc region
                         bool acc_sc_is_end = false;
                         unsigned int acc_sc_idx = 0;
+
+                        // is it within the adj left edge?
+                        bool in_adj_left_edge = ((L % 2) == 0);
+
+                        if (!in_adj_left_edge) { // TBD actually it can if it overlaps prior stitch
+                            // subclusters in the right edge can't get stitched
+                            // so don't bother trying to stitch it
+    
+                            // add it to the next set of acc subclusters
+                            next_acc_subclusters[place_idx_next_acc] = sc;
+                            place_idx_next_acc += 1;
+                        }
+
                         do
                         {
                             cluster_bounds acc_sc = curr_acc_subclusters[acc_sc_idx];
