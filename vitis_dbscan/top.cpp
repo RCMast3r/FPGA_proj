@@ -112,10 +112,11 @@ void dbscan_algo_fixed_mem(int points_x[MAX_NUM_POINTS],int points_y[MAX_NUM_POI
     {
         points[i].x=points_x[i];
         points[i].y=points_y[i];
+        
     }
 
-    for(int i=0; i<num_points_to_cluster; i++)
-    {
+    for(int i=0; i < num_points_to_cluster; i++) {
+    #pragma HLS pipeline
         if(points[i].label == PointLabel::UNVISITED)
         {
             expand_cluster_no_dyn(points, i, cluster_id, eps, min_points, clusters_out, num_points_to_cluster);

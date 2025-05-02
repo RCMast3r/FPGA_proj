@@ -7,7 +7,7 @@
 #define MAX_SEARCH_QUEUE_SIZE 300
 #define MAX_CLUSTERS 300
 #define MAX_NUM_NEIGHBORS 1000
-#define MAX_NUM_POINTS 30000 
+#define MAX_NUM_POINTS 128 
 
 enum class PointLabel
 {
