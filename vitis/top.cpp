@@ -297,7 +297,12 @@ void add_pixel_to_subcluster(
         bool sc_is_new_event = false;
 
 
-
+#if DEBUG==3
+        std::cout << "------------------------------" <<
+            std::endl <<
+            "begin next fp while loop" <<
+            std::endl;
+#endif
         // void read_next_col_pair()
         while (fp_in_curr_col_pair)
         {
@@ -326,7 +331,6 @@ void add_pixel_to_subcluster(
             // - the stream end arrived
             if (fp.is_end)
             {
-                // a stream end in the first column means we
                 //fp_is_end = true;
                 fp_in_curr_col_pair = false;
                 fired_pixel_stream_out << fp;
@@ -341,8 +345,8 @@ void add_pixel_to_subcluster(
                 // because the sc stream will be in sync with this one and encounter the event too
                 fp_in_curr_col_pair = false;
                 have_next_fp_buffered = false;
-                fired_pixel_stream_out << fp;
                 is_first_fp_of_event = true;
+                fired_pixel_stream_out << fp;
 #if DEBUG==3
                 std::cout << "fp read/sent new event id: " <<
                     std::hex <<
@@ -420,6 +424,12 @@ void add_pixel_to_subcluster(
             // but we shouldn't double-write the buffered fp to the out stream
         }
         
+#if DEBUG==3
+        std::cout << "------------------------------" <<
+            std::endl <<
+            "begin next sc while loop" <<
+            std::endl;
+#endif
         // void stitch_next_subclusters()
         while (sc_in_current_col_pair)
         {
@@ -427,10 +437,19 @@ void add_pixel_to_subcluster(
             if (have_next_sc_buffered) 
             {
                 sc = first_sc_of_next_col_pair;
+                have_next_sc_buffered = false;
+#if DEBUG==3
+                std::cout << "loaded the buffered sc" <<
+                    std::endl;
+#endif
             }
             else
             {
                 subcluster_stream >> sc;
+#if DEBUG==3
+                std::cout << "read next sc entry from stream" <<
+                    std::endl;
+#endif
             }
 
             // should move one once the column pair is done
@@ -439,7 +458,6 @@ void add_pixel_to_subcluster(
             // - the stream end arrived
             if (sc.is_end)
             {
-                // a stream end in the first column means we
                 sc_is_end = true;
                 sc_in_current_col_pair = false;
 
@@ -477,7 +495,16 @@ void add_pixel_to_subcluster(
             else // is a subcluster
             {        
 #if DEBUG==3
-                std::cout << "sc read a subcluster" <<
+                std::cout << "sc: (L: " <<
+                    std::hex <<
+                    (unsigned int)(sc.bounds.L) <<
+                    ", R: " <<
+                    (unsigned int)(sc.bounds.R) <<
+                    ", T: " <<
+                    (unsigned int)(sc.bounds.T) <<
+                    ", B: " <<
+                    (unsigned int)(sc.bounds.B) <<
+                    ")" <<
                     std::endl;
 #endif        
                 sc_in_current_col_pair; // TBD
