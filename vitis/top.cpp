@@ -1024,28 +1024,6 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                 }
             }
         }
-
-        // // void handle_end_conditions()
-        // if (sc_is_end)
-        // {
-        //     // if the streams are over, no need to reinit or manage arrays
-        //     // stitch_sc has already written out the remaining sc
-        // }
-        // else
-        // {
-        //     if (sc_is_new_event) // new event means we may need to reset some local variables
-        //     {
-        //         // do we need to do anything
-        //         // stitch_sc has already written out the remaining sc
-        //     }
-        //     else // the next column pair is in the same event, so manage variables as normal
-        //     {
-        //         // the adj_right_edge array will become the acc_left_edge, so do a copy
-        //         // go through the sc arrays, send out sc's that won't be in the acc right edge
-        //         // b/c they can't be stitched next time
-        //         // also 
-        //     }
-        // }
     }
 #if DEBUG==3
     std::cout << "End of Stage 3" <<
