@@ -1134,7 +1134,7 @@ void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int nu
     unsigned int max_depth = 25;
     hls::stream<fired_pixel, max_depth> fired_pixel_stream_A, fired_pixel_stream_B, fired_pixel_stream_C;
     hls::stream<cluster_bounds, max_depth> subcluster_stream, cluster_bounds_stream;
-#if DEBUG > =4
+#if DEBUG >= 4
     hls::stream<cluster, max_depth> cluster_stream;
 #endif
 
