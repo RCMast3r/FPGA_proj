@@ -316,7 +316,7 @@ void add_pixel_to_subcluster(
         }
 
         // swap in new subclusters
-        for (int i = 0; i < sizeof(curr_acc_subclusters); i++)
+        for (int i = 0; i < 256; i++)
         {
             // prev iter's next clusters are now the curr clusters
             cluster_bounds empty_marked_subcluster;
