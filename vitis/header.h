@@ -9,6 +9,8 @@
 // 5 to debug stage 5
 #define DEBUG 0
 
+#define STAGE_1_3_TEST 1
+
 #include <ap_int.h>
 #include <cstdint>
 #include <iostream>

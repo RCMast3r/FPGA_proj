@@ -1032,6 +1032,13 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
 #endif
 }
 
+#if STAGE_1_3_TEST==1
+void consume_remaining_streams(hls::stream<fired_pixel>& fired_pixel_stream_in, hls::stream<cluster_bounds>& cluster_bounds_stream)
+{
+    
+}
+#endif
+
 void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int num_lines, cluster clusters[])
 {
     #pragma HLS interface m_axi port = input_file_lines offset = slave bundle = mem1
@@ -1053,6 +1060,9 @@ void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int nu
     read_input_lines(input_file_lines, num_lines, fired_pixel_stream_A); // suppresses empty events
     add_pixel_to_subcluster(fired_pixel_stream_A, subcluster_stream, fired_pixel_stream_B);
     stitch_subclusters(subcluster_stream, fired_pixel_stream_B, cluster_bounds_stream, fired_pixel_stream_C);
+#if STAGE_1_3_TEST==1
+    consume_remaining_streams(fired_pixel_stream_C, cluster_bounds_stream);
+#endif
     //analyze_clusters(cluster_bounds_stream, fired_pixel_stream_C, cluster_stream);
     //write_clusters(cluster_stream, clusters);
 }
