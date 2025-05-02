@@ -467,6 +467,13 @@ void add_pixel_to_subcluster(
             num_right_pixels += adj_right_edge[i];
         }
 
+        std::cout << "acc region right edge col idx: " <<
+            (unsigned int)(acc_right_edge_C) <<
+            std::endl <<
+            "adj region left edge col idx:  " <<
+            (unsigned int)(adj_left_edge_C) <<
+            std::endl;
+
         std::cout << "acc region right edge has " <<
             num_acc_pixels <<
             " pixels" <<
