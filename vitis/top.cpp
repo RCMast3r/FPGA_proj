@@ -1054,27 +1054,66 @@ void consume_remaining_streams(hls::stream<fired_pixel>& fired_pixel_stream_in, 
         bool fp_in_same_event = true;
         bool cb_in_same_event = true;
 
+#if LOG_13_TEST==1
+        std::cout << "Start reading next event of fps" <<
+            std::endl;
+#endif
         while (fp_in_same_event) {
             fired_pixel_stream_in >> fp;
 
             if (fp.is_new_event || fp.is_end) {
                 fp_in_same_event = false;
             }
+#if LOG_13_TEST==1
+            if (fp.is_end) {
+                std::cout << "next fp: end marker" <<
+                    std::endl;
+            }
+            else if (fp.is_new_event)
+            {
+                std::cout << "next fp: event marker" <<
+                    std::endl;
+            }
+            else
+            {
+                std::cout << "next fp: regular fp" <<
+                    std::endl;
+            }
+#endif
         }
 #if LOG_13_TEST==1
-        std::cout << "Read next event of fps" <<
+        std::cout << "Finished reading next event of fps" <<
+            std::endl;
+
+        std::cout << "Start reading next event of cb" <<
             std::endl;
 #endif
         while (cb_in_same_event) {
             cluster_bounds_stream >> cb;
 
             if (cb.is_new_event || cb.is_end) {
-                fp_in_same_event = false;
+                cb_in_same_event = false;
             }
             cb_is_end = (cb.is_end == 1);
+#if LOG_13_TEST==1
+            if (cb.is_end) {
+                std::cout << "next cb: end marker" <<
+                    std::endl;
+            }
+            else if (cb.is_new_event)
+            {
+                std::cout << "next cb: event marker" <<
+                    std::endl;
+            }
+            else
+            {
+                std::cout << "next cb: regular cb" <<
+                    std::endl;
+            }
+#endif
         }
 #if LOG_13_TEST==1
-        std::cout << "Read next event of cbs" <<
+        std::cout << "Finished reading next event of cbs" <<
             std::endl;
 #endif
     }
