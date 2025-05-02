@@ -803,7 +803,7 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                                     std::endl;
 #endif                                
                                 // check if acc sc is too far below (assumes acc sc are ordered, which should be true)
-                                if (aT > B)
+                                if ((aT - B) > 1)
                                 {
                                     early_exit = true;
 #if DEBUG==3
