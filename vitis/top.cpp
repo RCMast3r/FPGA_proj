@@ -777,17 +777,38 @@ void stitch_bounds(cluster_bounds& source, cluster_bounds& addition)
                                         bool have_adj_pixels = false;
 
                                         // for each pixel in the overlap range of the adj sc
-                                        for (int j = oT; j <= oB; j++)
+                                        for (int j = oT; ((j <= oB) || have_adj_pixels); j++)
                                         {
-                                            if (adj_left_edge[j]) // if adj has a fired pixel there, check acc sc
+                                            if (adj_left_edge[j]) // if adj has a fired pixel there
                                             {
-                                                
+                                                // check each pixel at the obove, equal, and below position in acc sc (if possible)
+                                                bool is_acc_equal_fired = acc_right_edge[j]; // center is always in bounds
+                                                bool is_acc_above_fired = false;
+                                                if (((j - 1) >= 0) && ((j - 1) >= oT)) // safety and overlap range check
+                                                {
+                                                    is_acc_above_fired = acc_right_edge[j - 1];
+                                                }
+                                                bool is_acc_below_fired = false;
+                                                if (((j + 1) < 256) && ((j + 1) <= oB)) // safety and overlap range check
+                                                {
+                                                    is_acc_below_fired = acc_right_edge[j + 1];
+                                                }
+                                                have_adj_pixels = is_acc_equal_fired || is_acc_above_fired || is_acc_below_fired;
                                             }
-
-                                            // check each pixel at the obove, equal, and below position in acc sc (if possible)
                                         }
 
-                                        // check whether to add to prior stitch or start a new one
+                                        if (have_adj_pixels)
+                                        {
+                                            // check whether to add to prior stitch or start a new one
+                                            if (sc_accum_into_prior_stitch)
+                                            {
+                                                //
+                                            }
+                                            else
+                                            {
+                                                //
+                                            }
+                                        }
                                     }
                                 }
                             }
