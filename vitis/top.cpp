@@ -251,6 +251,20 @@ void stitch_bounds(cluster_bounds& source, cluster_bounds& addition)
 }
 
 /**
+ * @brief writes unstitched subclustes left in array to the cluster_bounds stream
+ * 
+ * @param curr_acc_subclusters subcluster array to be flushed
+ * @param cluster_bounds_stream stream to write final cluster bounds to
+ */
+void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bounds>& cluster_bounds_stream)
+{
+    for (unsigned int i = 0; ((i < 256) || !(subclusters_arr[i].is_end)); i++)
+    {
+
+    }
+}
+
+/**
  * @brief Find final cluster boundaries given a streams of subclusters and pixels
  * 
  * @param subcluster_stream input stream of subclusters from column-pairs
@@ -743,7 +757,7 @@ void stitch_bounds(cluster_bounds& source, cluster_bounds& addition)
                             cluster_bounds sc_stitch_accum = sc;
 
                             // go through all curr sc from the acc region
-                            for (int i = 0; (!(curr_acc_subclusters[i].is_end) || early_exit || i < 256); i++) // go through curr acc sc with early exit
+                            for (int i = 0; ((i < 256) || !(curr_acc_subclusters[i].is_end) || early_exit); i++) // go through curr acc sc with early exit
                             {
                                 col_idx_t aL = curr_acc_subclusters[i].bounds.L;
                                 col_idx_t aR = curr_acc_subclusters[i].bounds.R;
