@@ -1131,9 +1131,12 @@ void HLS_kernel_columnar_cluster(fired_pixel input_file_lines[], unsigned int nu
     #pragma HLS interface m_axi port = clusters offset = slave bundle = mem2
     #pragma HLS interface s_axilite port = return
 
-    hls::stream<fired_pixel> fired_pixel_stream_A, fired_pixel_stream_B, fired_pixel_stream_C;
-    hls::stream<cluster_bounds> subcluster_stream, cluster_bounds_stream;
-    hls::stream<cluster> cluster_stream;
+    unsigned int max_depth = 25;
+    hls::stream<fired_pixel, max_depth> fired_pixel_stream_A, fired_pixel_stream_B, fired_pixel_stream_C;
+    hls::stream<cluster_bounds, max_depth> subcluster_stream, cluster_bounds_stream;
+#if DEBUG > =4
+    hls::stream<cluster, max_depth> cluster_stream;
+#endif
 
     #pragma hls dataflow
     // Stage 1 - Read to Stream
