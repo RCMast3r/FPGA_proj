@@ -742,16 +742,55 @@ void stitch_bounds(cluster_bounds& source, cluster_bounds& addition)
 #endif
                             // 3. Check sc in acc for adjacent bounds (early skip chance when next acc sc T > sc.B)
 
+                            bool early_exit = false;
+
                             // go through all curr sc from the acc region
-                            for (int i = 0; (!(curr_acc_subclusters[i].is_end) || i < 256); i++) // go through curr acc sc with early exit
+                            for (int i = 0; (!(curr_acc_subclusters[i].is_end) || early_exit || i < 256); i++) // go through curr acc sc with early exit
                             {
+                                col_idx_t aL = curr_acc_subclusters[i].bounds.L;
+                                col_idx_t aR = curr_acc_subclusters[i].bounds.R;
+                                row_idx_t aT = curr_acc_subclusters[i].bounds.T;
+                                row_idx_t aB = curr_acc_subclusters[i].bounds.B;
 
+                                // check if acc sc is too far below (assumes acc sc are ordered, which should be true)
+                                if (aT > B)
+                                {
+                                    early_exit = true;
+                                }
+                                else
+                                {
+                                    // check for overlap of their vertical ranges
+                                    bool bounds_overlap = (std::max(T, aT) <= std::min(B, aB));
+
+                                    if (bounds_overlap)
+                                    {
+                                        // 4. If adjacent bounds, check the overlapping range for adj pixels in (min R, max R)
+                                        //    Add bound if an adj pixel is found, and mark acc sc as stitched (is_new_event)
+                                        
+                                        // get the overlapping range
+                                        row_idx_t oT = std::max(T, aT);
+                                        row_idx_t oB = std::min(B, aB);
+
+                                        // check edges
+                                        //(dont check up/down if outside of overlap range or if outside of array range)
+
+                                        bool have_adj_pixels = false;
+
+                                        // for each pixel in the overlap range of the adj sc
+                                        for (int j = oT; j <= oB; j++)
+                                        {
+                                            if (adj_left_edge[j]) // if adj has a fired pixel there, check acc sc
+                                            {
+                                                
+                                            }
+
+                                            // check each pixel at the obove, equal, and below position in acc sc (if possible)
+                                        }
+
+                                        // check whether to add to prior stitch or start a new one
+                                    }
+                                }
                             }
-
-                            // 4. If adjacent bounds, check the overlapping range for adj pixels in (min R, max R)
-                            //    Add bound if an adj pixel is found, and mark acc sc as stitched (is_new_event)
-
-                            // check whether to add to prior stitch or start a new one
                         }
                     }
 
