@@ -1032,6 +1032,8 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
 #endif
 }
 
+#define LOG_13_TEST 1
+
 #if STAGE_1_3_TEST==1
 void consume_remaining_streams(hls::stream<fired_pixel>& fired_pixel_stream_in, hls::stream<cluster_bounds>& cluster_bounds_stream)
 {
@@ -1041,6 +1043,11 @@ void consume_remaining_streams(hls::stream<fired_pixel>& fired_pixel_stream_in, 
     // read out the first event markers
     fired_pixel_stream_in >> fp;
     cluster_bounds_stream >> cb;
+
+#if LOG_13_TEST==1
+    std::cout << "Read first event markers" <<
+        std::endl;
+#endif
 
     bool cb_is_end = false;
     while (!cb_is_end) {
@@ -1054,6 +1061,10 @@ void consume_remaining_streams(hls::stream<fired_pixel>& fired_pixel_stream_in, 
                 fp_in_same_event = false;
             }
         }
+#if LOG_13_TEST==1
+        std::cout << "Read next event of fps" <<
+            std::endl;
+#endif
         while (cb_in_same_event) {
             cluster_bounds_stream >> cb;
 
@@ -1062,7 +1073,15 @@ void consume_remaining_streams(hls::stream<fired_pixel>& fired_pixel_stream_in, 
             }
             cb_is_end = (cb.is_end == 1);
         }
+#if LOG_13_TEST==1
+        std::cout << "Read next event of cbs" <<
+            std::endl;
+#endif
     }
+#if LOG_13_TEST==1
+    std::cout << "Finished consuming" <<
+        std::endl;
+#endif
 }
 #endif
 
