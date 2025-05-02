@@ -841,7 +841,7 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                                         bool have_adj_pixels = false;
 
                                         // for each pixel in the overlap range of the adj sc
-                                        for (unsigned int j = oT; ((j <= oB) || have_adj_pixels); j++)
+                                        for (unsigned int j = oT; ((j <= oB) && !have_adj_pixels); j++)
                                         {
                                             if (adj_left_edge[j]) // if adj has a fired pixel there
                                             {
