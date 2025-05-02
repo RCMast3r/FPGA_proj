@@ -1,3 +1,7 @@
 *.out
 *.csv
 .vscode/
+vitis_dbscan/project_1/
+result
+vitis_dbscan/tb_output_chip_0.txt
+*.log
