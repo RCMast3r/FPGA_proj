@@ -257,10 +257,12 @@ void add_pixel_to_subcluster(
     cluster_bounds first_sc_of_next_col_pair;
 
     //col_idx_t fp_prev_C;
-    row_idx_t fp_prev_R;
+    //row_idx_t fp_prev_R;
     row_idx_t fp_curr_col_pair_idx;
     row_idx_t fp_prev_col_pair_idx;
 
+    row_idx_t sc_curr_col_pair_idx;
+    row_idx_t sc_prev_col_pair_idx;
 
     fired_pixel fp;
     cluster_bounds sc;
@@ -278,6 +280,7 @@ void add_pixel_to_subcluster(
     //bool is_end = false;
 
     bool is_first_fp_of_event = true;
+    bool is_first_sc_of_event = true;
 
     bool have_next_fp_buffered = false;
     bool have_next_sc_buffered = false;
@@ -291,8 +294,8 @@ void add_pixel_to_subcluster(
         //      acc arrays should use the is_end bit to mark empty scs 
         //      don't reset arrays that should carry over between outer loop iterations
 
-        bool fp_in_curr_col_pair = true;
-        bool sc_in_current_col_pair = true;
+        bool fp_in_same_col_pair = true;
+        bool sc_in_same_col_pair = true;
 
         bool sc_is_new_event = false;
 
@@ -304,7 +307,7 @@ void add_pixel_to_subcluster(
             std::endl;
 #endif
         // void read_next_col_pair()
-        while (fp_in_curr_col_pair)
+        while (fp_in_same_col_pair)
         {
             // if we had a carry over between column pairs, use that one before 
             if (have_next_fp_buffered) 
@@ -332,7 +335,7 @@ void add_pixel_to_subcluster(
             if (fp.is_end)
             {
                 //fp_is_end = true;
-                fp_in_curr_col_pair = false;
+                fp_in_same_col_pair = false;
                 fired_pixel_stream_out << fp;
 #if DEBUG==3
                 std::cout << "fp read/sent end marker" <<
@@ -343,7 +346,7 @@ void add_pixel_to_subcluster(
             {
                 // no need to set a flag to track this
                 // because the sc stream will be in sync with this one and encounter the event too
-                fp_in_curr_col_pair = false;
+                fp_in_same_col_pair = false;
                 have_next_fp_buffered = false;
                 is_first_fp_of_event = true;
                 fired_pixel_stream_out << fp;
@@ -372,14 +375,14 @@ void add_pixel_to_subcluster(
 
                 // is this pixel in a different column-pair than the prev pixel?
                 fp_curr_col_pair_idx = (C / 2); 
-                fp_in_curr_col_pair = (fp_curr_col_pair_idx == fp_prev_col_pair_idx);
+                fp_in_same_col_pair = (fp_curr_col_pair_idx == fp_prev_col_pair_idx);
                 fp_prev_col_pair_idx = fp_curr_col_pair_idx;
 
                 // pixel is in the next column pair, so save it for later
-                if (!fp_in_curr_col_pair && !is_first_fp_of_event) 
+                if (!fp_in_same_col_pair && !is_first_fp_of_event) 
                 {
                     first_fp_of_next_col_pair = fp;
-                    fp_in_curr_col_pair = false;
+                    fp_in_same_col_pair = false;
                     have_next_fp_buffered = true;
 #if DEBUG==3
                     std::cout << "buffered the fp, as its from next col-pair" <<
@@ -431,7 +434,7 @@ void add_pixel_to_subcluster(
             std::endl;
 #endif
         // void stitch_next_subclusters()
-        while (sc_in_current_col_pair)
+        while (sc_in_same_col_pair)
         {
             // if we had a carry over between column pairs, 
             if (have_next_sc_buffered) 
@@ -459,60 +462,68 @@ void add_pixel_to_subcluster(
             if (sc.is_end)
             {
                 sc_is_end = true;
-                sc_in_current_col_pair = false;
+                sc_in_same_col_pair = false;
 
-                // send out reamining sc
+                // TBD: send out reamining sc
 
-                // send along end marker
+                cluster_bounds_stream << sc; // send along end marker
 
-                // do NOT break, as new event would also do that
-                // loops in dataflows can't have two exit conditions
 #if DEBUG==3
                 std::cout << "sc read/sent end marker" <<
                     std::endl;
 #endif
+
+                // do NOT break, as new event would also do that
+                // loops in dataflows can't have two exit conditions
             }
             else if (sc.is_new_event)
             {
                 sc_is_new_event = true;
-                sc_in_current_col_pair = false;
+                sc_in_same_col_pair = false;
                 have_next_sc_buffered = false;
+                is_first_sc_of_event = false;
 
-                // send out remaining sc
+                // TBD: send out remaining sc
 
-                // send along event marker
-
-                // do NOT break, as new event would also do that
-                // loops in dataflows can't have two exit conditions
-
+                cluster_bounds_stream << sc; // send along event marker
 #if DEBUG==3
                 std::cout << "sc read/sent new event id: " <<
                     std::hex <<
                     (unsigned int)(sc.ID) <<
                     std::endl;
 #endif
+                // do NOT break, as new event would also do that
+                // loops in dataflows can't have two exit conditions
+
             }
             else // is a subcluster
-            {        
+            {
+                // get the bounds of the subcluster
+                col_idx_t L = sc.bounds.L;
+                col_idx_t R = sc.bounds.R;
+                row_idx_t T = sc.bounds.T;
+                row_idx_t B = sc.bounds.B;
+
 #if DEBUG==3
                 std::cout << "sc: (L: " <<
                     std::hex <<
-                    (unsigned int)(sc.bounds.L) <<
+                    (unsigned int)(L) <<
                     ", R: " <<
-                    (unsigned int)(sc.bounds.R) <<
+                    (unsigned int)(R) <<
                     ", T: " <<
-                    (unsigned int)(sc.bounds.T) <<
+                    (unsigned int)(T) <<
                     ", B: " <<
-                    (unsigned int)(sc.bounds.B) <<
+                    (unsigned int)(B) <<
                     ")" <<
                     std::endl;
 #endif        
-                sc_in_current_col_pair; // TBD
+                
+                sc_in_same_col_pair; // TBD
 
-                if (!sc_in_current_col_pair) // pixel is in the next column pair, so save it for later
+                if (!sc_in_same_col_pair) // pixel is in the next column pair, so save it for later
                 {
                     first_sc_of_next_col_pair = sc;
-                    fp_in_curr_col_pair = false;
+                    fp_in_same_col_pair = false;
                     //send out remaining sc in acc
                 }
                 else // sc is in the same column pair
