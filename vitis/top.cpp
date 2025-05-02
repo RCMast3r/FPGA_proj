@@ -801,8 +801,7 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                                     (unsigned int)aB <<
                                     ")" <<
                                     std::endl;
-#endif
-
+#endif                                
                                 // check if acc sc is too far below (assumes acc sc are ordered, which should be true)
                                 if (aT > B)
                                 {
@@ -812,10 +811,28 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                                         std::endl;
 #endif
                                 }
+                                else if (aR != acc_right_edge_C) // check if acc sc is in the right edge
+                                {
+#if DEBUG==3
+                                    std::cout << "acc sc is not in the right edge, can't be stitched" <<
+                                        std::endl;
+#endif
+                                }
                                 else
                                 {
+#if DEBUG==3
+                                    std::cout << "acc sc is in the right edge" <<
+                                        std::endl;
+#endif
+
                                     // check for overlap of their vertical ranges
                                     bool bounds_overlap = (std::max(T, aT) <= std::min(B, aB));
+
+                                    // check for 
+                                    bool sc_bound_top_corner_adj    = ((T - aB) == 1);
+                                    bool sc_bound_bottom_corner_adj = ((aT - B) == 1);
+
+                                    bool has_adj_pixel = false;
 
                                     if (bounds_overlap)
                                     {
@@ -838,10 +855,8 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                                         // check edges
                                         //(dont check up/down if outside of overlap range or if outside of array range)
 
-                                        bool have_adj_pixels = false;
-
                                         // for each pixel in the overlap range of the adj sc
-                                        for (unsigned int j = oT; ((j <= oB) && !have_adj_pixels); j++)
+                                        for (unsigned int j = oT; ((j <= oB) && !has_adj_pixel); j++)
                                         {
                                             if (adj_left_edge[j]) // if adj has a fired pixel there
                                             {
@@ -857,9 +872,9 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
                                                 {
                                                     is_acc_below_fired = acc_right_edge[j + 1];
                                                 }
-                                                have_adj_pixels = is_acc_equal_fired || is_acc_above_fired || is_acc_below_fired;
+                                                has_adj_pixel = is_acc_equal_fired || is_acc_above_fired || is_acc_below_fired;
 #if DEBUG==3
-                                                if (have_adj_pixels)
+                                                if (has_adj_pixel)
                                                 {
                                                     std::cout << "adj_pixels: adj_sc C: " <<
                                                         (unsigned int)j <<
@@ -875,30 +890,64 @@ void flush_subclusters(cluster_bounds subclusters_arr[], hls::stream<cluster_bou
 #endif
                                             }
                                         }
-
-                                        if (have_adj_pixels)
-                                        {
-                                            // stitch bounds and add to previous stitch
-                                            stitch_bounds(sc_stitch_accum, curr_acc_subclusters[i]);
-
-                                            // mark acc sc as stitched so it doesn't get written to cluster stream
-                                            curr_acc_subclusters[i].is_new_event = 1;
-
+                                    }
+                                    else if (sc_bound_top_corner_adj)
+                                    {
 #if DEBUG==3
-                                            std::cout << "interm. stitch accum to: (sL: " <<
-                                                (unsigned int)(sc_stitch_accum.bounds.L) <<
-                                                ", sR: " <<
-                                                (unsigned int)(sc_stitch_accum.bounds.R) <<
-                                                ", sT: " <<
-                                                (unsigned int)(sc_stitch_accum.bounds.T) <<
-                                                ", sB: " <<
-                                                (unsigned int)(sc_stitch_accum.bounds.B) <<
-                                                ")" <<
-                                                std::endl <<
-                                                "marked acc sc as stitched" <<
+                                        std::cout << "sc bound top corner is adj to acc sc's" <<
+                                            std::endl;
+#endif
+                                        bool sc_top_corner_pixel_adj = ((adj_left_edge[T] == 1) && (acc_right_edge[aB] == 1));
+
+                                        if (sc_top_corner_pixel_adj)
+                                        {
+                                            has_adj_pixel = true;
+#if DEBUG==3
+                                            std::cout << "sc top corner pixel is adj to acc sc's" <<
                                                 std::endl;
 #endif
                                         }
+                                    }
+                                    else if (sc_bound_bottom_corner_adj)
+                                    {
+#if DEBUG==3
+                                        std::cout << "sc bound bottom corner is adj to acc sc's" <<
+                                            std::endl;
+#endif
+                                        bool sc_bottom_corner_pixel_adj = ((adj_left_edge[B] == 1) && (acc_right_edge[aT] == 1));
+
+                                        if (sc_bottom_corner_pixel_adj)
+                                        {
+                                            has_adj_pixel = true;
+#if DEBUG==3
+                                            std::cout << "sc bottom corner pixel is adj to acc sc's" <<
+                                                std::endl;
+#endif
+                                        }
+                                    }
+
+                                    if (has_adj_pixel)
+                                    {
+                                        // stitch bounds and add to previous stitch
+                                        stitch_bounds(sc_stitch_accum, curr_acc_subclusters[i]);
+
+                                        // mark acc sc as stitched so it doesn't get written to cluster stream
+                                        curr_acc_subclusters[i].is_new_event = 1;
+
+#if DEBUG==3
+                                        std::cout << "interm. stitch accum to: (sL: " <<
+                                            (unsigned int)(sc_stitch_accum.bounds.L) <<
+                                            ", sR: " <<
+                                            (unsigned int)(sc_stitch_accum.bounds.R) <<
+                                            ", sT: " <<
+                                            (unsigned int)(sc_stitch_accum.bounds.T) <<
+                                            ", sB: " <<
+                                            (unsigned int)(sc_stitch_accum.bounds.B) <<
+                                            ")" <<
+                                            std::endl <<
+                                            "marked acc sc as stitched" <<
+                                            std::endl;
+#endif
                                     }
                                 }
                             }
