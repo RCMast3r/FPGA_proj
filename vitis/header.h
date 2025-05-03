@@ -7,7 +7,7 @@
 // 3 to debug stage 3
 // 4 to debug stage 4
 // 5 to debug stage 5
-#define DEBUG 2
+#define DEBUG 5
 
 #include <ap_int.h>
 #include <cstdint>
@@ -145,7 +145,7 @@ struct cluster_bounds {
 
     // copy assignment operator
     cluster_bounds& operator=(const cluster_bounds& other) {
-        if (this != &other) {  // protect against self-assignment
+       // if (this != &other) {  // protect against self-assignment
             is_end = other.is_end;
             is_new_event = other.is_new_event;
 
@@ -154,7 +154,7 @@ struct cluster_bounds {
             } else {
                 ID = other.ID;
             }
-        }
+        //}
         return *this;
     }
 
@@ -212,8 +212,8 @@ struct cluster {
     ap_uint<fired_pixels_per_cluster_bits> num_columns;
     ap_uint<fired_pixels_per_cluster_bits> num_rows;
 
-    ap_fixed<13,3> centre_of_mass_y_cord;
-    ap_fixed<12,3> centre_of_mass_x_cord;
+    ap_uint<13> centre_of_mass_y_cord;
+    ap_uint<12> centre_of_mass_x_cord;
 
     //box_bounds bounds; // bounding box of the cluster
     num_fired_t num_fired; // number of fired pixels in the cluster
@@ -223,7 +223,7 @@ struct cluster {
 };
 //struct cluster {
 //    ID_t ID; // Event ID Number
-//   box_bounds bounds; // bounding box of the cluster
+//    box_bounds bounds; // bounding box of the cluster
 //    num_fired_t num_fired; // number of fired pixels in the cluster
 //    box_bounds_idx_t key[max_num_fired_pixels_per_cluster]; // locations of the fired pixels in the cluster
 //    // tbd? add center of mass AKA centroid
