@@ -1,0 +1,26 @@
+Read 26 fired_pixel entries
+(non-empty) event ID: 3
+pixel (C: 0, R: 0)
+pixel (C: 1, R: 0)
+pixel (C: 1, R: 1)
+pixel (C: 0, R: 2)
+pixel (C: 1, R: 3)
+pixel (C: 1, R: 5)
+pixel (C: 0, R: 8)
+pixel (C: 0, R: 9)
+pixel (C: 1, R: 9)
+pixel (C: 0, R: b)
+pixel (C: 3, R: 0)
+pixel (C: 2, R: 1)
+pixel (C: 2, R: 4)
+pixel (C: 3, R: 7)
+pixel (C: 2, R: 7)
+pixel (C: 3, R: 8)
+pixel (C: 2, R: b)
+pixel (C: 6, R: 0)
+pixel (C: 7, R: 0)
+pixel (C: 7, R: 1)
+pixel (C: 6, R: 1)
+(non-empty) event ID: 4
+Final Case: sent pixel (C: 6, R: 2)
+INFO [HLS SIM]: The maximum depth reached by any hls::stream() instance in the design is 19
